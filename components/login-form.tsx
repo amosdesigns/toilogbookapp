@@ -41,13 +41,13 @@ export function LoginForm({
               </Button>
             </div>
           </form>
-          <div className="bg-blue-800 relative hidden md:block">
+          <div className="relative hidden md:block">
             <Image
-              src="/toilogo.jpeg"
+              src="/toilogo.png"
               alt="Town of Islip Logo"
-              width={500}
-              height={500}
-              className="h-full w-full object-cover"
+              width={400}
+              height={400}
+              className="h-full w-full object-cover p-8"
             />
           </div>
         </CardContent>
