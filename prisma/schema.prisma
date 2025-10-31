@@ -1,0 +1,197 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Enums
+enum Role {
+  SUPER_ADMIN
+  ADMIN
+  SUPERVISOR
+  GUARD
+}
+
+enum RecordStatus {
+  LIVE
+  UPDATED
+  ARCHIVED
+  DRAFT
+}
+
+enum LogType {
+  INCIDENT
+  PATROL
+  VISITOR_CHECKIN
+  MAINTENANCE
+  WEATHER
+  OTHER
+}
+
+enum IncidentSeverity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+// Models
+model User {
+  id        String   @id @default(cuid())
+  clerkId   String   @unique
+  email     String   @unique
+  firstName String?
+  lastName  String?
+  role      Role     @default(GUARD)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  logs             Log[]
+  reviewedLogs     Log[]              @relation("ReviewedLogs")
+  shifts           Shift[]
+  dutySessions     DutySession[]
+  locationCheckIns LocationCheckIn[]
+
+  @@index([clerkId])
+  @@index([email])
+}
+
+model Location {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String?
+  address     String?
+  isActive    Boolean  @default(true)
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  logs             Log[]
+  shifts           Shift[]
+  dutySessions     DutySession[]
+  locationCheckIns LocationCheckIn[]
+
+  @@index([name])
+}
+
+model Shift {
+  id          String   @id @default(cuid())
+  name        String
+  startTime   DateTime
+  endTime     DateTime
+  locationId  String
+  supervisorId String?
+
+  location    Location @relation(fields: [locationId], references: [id])
+  supervisor  User?    @relation(fields: [supervisorId], references: [id])
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  logs         Log[]
+  dutySessions DutySession[]
+
+  @@index([locationId])
+  @@index([supervisorId])
+  @@index([startTime, endTime])
+}
+
+model Log {
+  id            String       @id @default(cuid())
+  type          LogType
+  title         String
+  description   String       @db.Text
+  status        RecordStatus @default(LIVE)
+
+  locationId    String
+  shiftId       String?
+  userId        String
+
+  // Incident Report Specific Fields
+  severity           IncidentSeverity?
+  incidentTime       DateTime?         // Actual time of incident (vs createdAt = when reported)
+  peopleInvolved     String?           @db.Text  // Names, descriptions
+  witnesses          String?           @db.Text  // Witness information
+  actionsTaken       String?           @db.Text  // What the guard did
+  followUpRequired   Boolean?          @default(false)
+  followUpNotes      String?           @db.Text
+  weatherConditions  String?
+  photoUrls          String?           @db.Text  // JSON array of photo URLs (future)
+  reviewedBy         String?           // Supervisor who reviewed (for incidents)
+  reviewedAt         DateTime?         // When reviewed
+  reviewNotes        String?           @db.Text  // Supervisor notes
+
+  location      Location     @relation(fields: [locationId], references: [id])
+  shift         Shift?       @relation(fields: [shiftId], references: [id])
+  user          User         @relation(fields: [userId], references: [id])
+  reviewer      User?        @relation("ReviewedLogs", fields: [reviewedBy], references: [id])
+
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  archivedAt    DateTime?
+
+  @@index([locationId])
+  @@index([shiftId])
+  @@index([userId])
+  @@index([type])
+  @@index([status])
+  @@index([createdAt])
+  @@index([severity])
+  @@index([reviewedBy])
+}
+
+model DutySession {
+  id          String    @id @default(cuid())
+  userId      String
+  locationId  String?   // Null for supervisors (roaming duty)
+  shiftId     String?   // Optional link to scheduled shift
+
+  clockInTime  DateTime @default(now())
+  clockOutTime DateTime? // Null = still on duty
+
+  notes       String?   @db.Text // End of shift notes
+
+  user        User      @relation(fields: [userId], references: [id])
+  location    Location? @relation(fields: [locationId], references: [id])
+  shift       Shift?    @relation(fields: [shiftId], references: [id])
+
+  // Supervisor location check-ins during this duty session
+  locationCheckIns LocationCheckIn[]
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([userId])
+  @@index([locationId])
+  @@index([clockInTime])
+  @@index([clockOutTime])
+}
+
+model LocationCheckIn {
+  id             String       @id @default(cuid())
+  dutySessionId  String       // Link to supervisor's duty session
+  locationId     String
+  userId         String       // Supervisor who checked in
+
+  checkInTime    DateTime     @default(now())
+  notes          String?      @db.Text // Observations at this location
+
+  dutySession    DutySession  @relation(fields: [dutySessionId], references: [id], onDelete: Cascade)
+  location       Location     @relation(fields: [locationId], references: [id])
+  user           User         @relation(fields: [userId], references: [id])
+
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@index([dutySessionId])
+  @@index([locationId])
+  @@index([userId])
+  @@index([checkInTime])
+}

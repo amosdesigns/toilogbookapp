@@ -1,9 +1,4 @@
 {
-  "cSpell.words": [
-    "ATLANTIQUE",
-    "BROWNRIVERWEST",
-    "Islip",
-    "toilogo",
-    "WESTISLIP"
-  ]
+  "WillLuke.nextjs.addTypesOnSave": true,
+  "WillLuke.nextjs.hasPrompted": true
 }
