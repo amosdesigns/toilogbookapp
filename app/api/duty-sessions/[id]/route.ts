@@ -22,7 +22,7 @@ export async function PATCH(
     const session = await prisma.dutySession.update({
       where: { id },
       data: {
-        endTime: endTime ? new Date(endTime) : new Date(),
+        clockOutTime: endTime ? new Date(endTime) : new Date(),
         notes,
       },
     })
