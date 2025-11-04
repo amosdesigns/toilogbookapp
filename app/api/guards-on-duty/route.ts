@@ -1,6 +1,6 @@
 import { auth } from "@clerk/nextjs/server"
 import { NextResponse } from "next/server"
-import prisma from "@/lib/prisma"
+import { prisma } from "@/lib/prisma"
 
 export async function GET() {
   try {
@@ -38,7 +38,7 @@ export async function GET() {
     })
 
     // Calculate hours on duty and format data
-    const guards = activeDutySessions.map((session) => {
+    const guards = activeDutySessions.map((session: { clockInTime: string | number | Date; user: { id: any; firstName: any; lastName: any; email: any; role: any }; id: any; locationId: any; location: { name: any } }) => {
       const now = new Date()
       const start = new Date(session.clockInTime)
       const diff = now.getTime() - start.getTime()
