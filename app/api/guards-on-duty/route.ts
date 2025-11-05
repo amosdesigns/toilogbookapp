@@ -38,7 +38,7 @@ export async function GET() {
     })
 
     // Calculate hours on duty and format data
-    const guards = activeDutySessions.map((session: { clockInTime: string | number | Date; user: { id: any; firstName: any; lastName: any; email: any; role: any }; id: any; locationId: any; location: { name: any } }) => {
+    const guards = activeDutySessions.map((session) => {
       const now = new Date()
       const start = new Date(session.clockInTime)
       const diff = now.getTime() - start.getTime()
@@ -46,23 +46,23 @@ export async function GET() {
       const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
 
       return {
+        id: session.id,
         userId: session.user.id,
-        userName: `${session.user.firstName} ${session.user.lastName}`,
-        userEmail: session.user.email,
+        name: `${session.user.firstName || ''} ${session.user.lastName || ''}`.trim(),
+        email: session.user.email,
         role: session.user.role,
-        dutySessionId: session.id,
         locationId: session.locationId,
-        locationName: session.location?.name || null,
+        locationName: session.location?.name || 'Roaming', // Handle null location
         clockInTime: session.clockInTime,
         hoursOnDuty: `${hours}h ${minutes}m`,
       }
     })
 
-    return NextResponse.json({ guards })
+    return NextResponse.json(guards)
   } catch (error) {
-    console.error("Error fetching guards on duty:", error)
+    console.error("[GUARDS_ON_DUTY_GET]", error)
     return NextResponse.json(
-      { error: "Failed to fetch guards on duty" },
+      { error: "Internal server error" },
       { status: 500 }
     )
   }
