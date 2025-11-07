@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { createLogSchema } from './log'
+import { createLogSchema, RecordStatusEnum } from './log'
 
 export const IncidentSeverityEnum = z.enum([
   'LOW',
@@ -12,15 +12,18 @@ export const createIncidentReportSchema = createLogSchema.extend({
   // Force type to be INCIDENT
   type: z.literal('INCIDENT'),
 
+  // Override status to be required (not optional with default)
+  status: RecordStatusEnum,
+
   // Incident-specific required fields
   severity: IncidentSeverityEnum,
-  incidentTime: z.coerce.date(),
+  incidentTime: z.date(),
 
   // Optional incident fields
   peopleInvolved: z.string().optional(),
   witnesses: z.string().optional(),
   actionsTaken: z.string().min(1, 'Please describe actions taken').optional(),
-  followUpRequired: z.boolean().default(false),
+  followUpRequired: z.boolean(),
   followUpNotes: z.string().optional(),
   weatherConditions: z.string().max(200).optional(),
 })
