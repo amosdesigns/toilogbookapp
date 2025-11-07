@@ -23,6 +23,7 @@ import {
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { toast } from "sonner"
+import { sendMessage as sendMessageAction, forceClockOut } from "@/app/actions"
 
 interface GuardOnDuty {
   userId: string
@@ -64,18 +65,13 @@ export function GuardsOnDutyTable({ guards, onRefresh }: GuardsOnDutyTableProps)
 
     try {
       setIsSending(true)
-      const response = await fetch("/api/messages", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          recipientId: selectedGuard.userId,
-          message: message.trim(),
-        }),
+      const result = await sendMessageAction({
+        recipientId: selectedGuard.userId,
+        message: message.trim(),
       })
 
-      if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.error || "Failed to send message")
+      if (!result.success) {
+        throw new Error(result.error || "Failed to send message")
       }
 
       toast.success(`Message sent to ${selectedGuard.userName}`)
@@ -93,15 +89,13 @@ export function GuardsOnDutyTable({ guards, onRefresh }: GuardsOnDutyTableProps)
 
     try {
       setIsSending(true)
-      const response = await fetch(`/api/duty-sessions/${selectedGuard.dutySessionId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ clockOut: true, supervisorOverride: true }),
-      })
+      const result = await forceClockOut(
+        selectedGuard.dutySessionId,
+        "Supervisor override: Duty session ended by supervisor"
+      )
 
-      if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.error || "Failed to end duty session")
+      if (!result.success) {
+        throw new Error(result.error || "Failed to end duty session")
       }
 
       toast.success(`Duty session ended for ${selectedGuard.userName}`)

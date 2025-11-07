@@ -33,6 +33,8 @@ import { Calendar } from "@/components/ui/calendar"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { cn } from "@/lib/utils"
+import { VideoUpload } from "@/components/video-upload"
+import { useState } from "react"
 
 interface IncidentReportFormProps {
   onSubmit: (data: CreateIncidentReportInput) => void | Promise<void>
@@ -41,6 +43,7 @@ interface IncidentReportFormProps {
   shifts?: Array<{ id: string; name: string }>
   isLoading?: boolean
   currentLocationId?: string // Auto-fill if guard is on duty
+  userId: string
 }
 
 export function IncidentReportForm({
@@ -50,7 +53,12 @@ export function IncidentReportForm({
   shifts = [],
   isLoading = false,
   currentLocationId,
+  userId,
 }: IncidentReportFormProps) {
+  const [videoUrls, setVideoUrls] = useState<string[]>(
+    defaultValues?.videoUrls ? JSON.parse(defaultValues.videoUrls) : []
+  )
+
   const form = useForm<CreateIncidentReportInput>({
     resolver: zodResolver(createIncidentReportSchema),
     defaultValues: {
@@ -86,9 +94,18 @@ export function IncidentReportForm({
     }
   }
 
+  const handleSubmit = (data: CreateIncidentReportInput) => {
+    // Add video URLs as JSON string
+    const submitData = {
+      ...data,
+      videoUrls: videoUrls.length > 0 ? JSON.stringify(videoUrls) : undefined,
+    }
+    onSubmit(submitData)
+  }
+
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
         <Alert>
           <AlertTriangle className="h-4 w-4" />
           <AlertDescription>
@@ -453,6 +470,21 @@ export function IncidentReportForm({
             </FormItem>
           )}
         />
+
+        {/* Video Upload */}
+        <div className="space-y-2">
+          <FormLabel>Evidence Videos (Optional)</FormLabel>
+          <VideoUpload
+            onVideosChange={setVideoUrls}
+            initialVideos={videoUrls}
+            userId={userId}
+            maxVideos={3}
+            maxSizeMB={100}
+          />
+          <FormDescription>
+            Upload up to 3 videos as evidence (100MB max each)
+          </FormDescription>
+        </div>
 
         <div className="flex justify-end gap-4">
           <Button type="submit" disabled={isLoading}>

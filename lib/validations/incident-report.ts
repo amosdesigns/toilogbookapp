@@ -35,6 +35,7 @@ export const updateIncidentReportSchema = z.object({
   locationId: z.string().cuid().optional(),
   shiftId: z.string().cuid().optional().nullable(),
   status: z.enum(['LIVE', 'UPDATED', 'ARCHIVED', 'DRAFT']).optional(),
+  videoUrls: z.string().optional().nullable(),
 
   // Incident fields
   severity: IncidentSeverityEnum.optional(),

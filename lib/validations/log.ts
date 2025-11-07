@@ -23,6 +23,7 @@ export const createLogSchema = z.object({
   locationId: z.string().cuid('Invalid location ID'),
   shiftId: z.string().cuid('Invalid shift ID').optional(),
   status: RecordStatusEnum,
+  videoUrls: z.string().optional(), // JSON stringified array of video URLs
 })
 
 export const updateLogSchema = z.object({
@@ -32,6 +33,7 @@ export const updateLogSchema = z.object({
   locationId: z.string().cuid().optional(),
   shiftId: z.string().cuid().optional().nullable(),
   status: RecordStatusEnum.optional(),
+  videoUrls: z.string().optional().nullable(),
 })
 
 export type CreateLogInput = z.infer<typeof createLogSchema>

@@ -12,6 +12,16 @@ import { IncidentReportsStatus } from "@/components/supervisor/incident-reports-
 import { LocationLogbookViewer } from "@/components/supervisor/location-logbook-viewer"
 import { FileText, Calendar, MapPin, Users } from "lucide-react"
 import { toast } from "sonner"
+import {
+  getCurrentDutySession,
+  getLocations,
+  getGuardsOnDuty,
+  getLogs,
+  clockIn,
+  clockOut,
+  checkInToLocation,
+  reviewIncident,
+} from "@/app/actions"
 
 interface DutySession {
   id: string
@@ -92,35 +102,29 @@ export default function AdminDashboardPage() {
       setIsFetching(true)
 
       // Fetch active duty session
-      const dutyResponse = await fetch("/api/duty-sessions?status=active")
-      if (dutyResponse.ok) {
-        const data = await dutyResponse.json()
-        if (data.dutySession) {
-          setDutySession(data.dutySession)
-        }
+      const dutyResult = await getCurrentDutySession()
+      if (dutyResult.success && dutyResult.dutySession) {
+        setDutySession(dutyResult.dutySession as any)
       }
 
       // Fetch locations
-      const locationsResponse = await fetch("/api/locations")
-      if (locationsResponse.ok) {
-        const data = await locationsResponse.json()
-        setLocations(data.locations || [])
+      const locationsResult = await getLocations(true) // active only
+      if (locationsResult.success) {
+        setLocations(locationsResult.locations || [])
       }
 
       // Supervisor-only data
       if (isSupervisor) {
         // Fetch guards on duty
-        const guardsResponse = await fetch("/api/guards-on-duty")
-        if (guardsResponse.ok) {
-          const data = await guardsResponse.json()
-          setGuardsOnDuty(data.guards || [])
+        const guardsResult = await getGuardsOnDuty()
+        if (guardsResult.success) {
+          setGuardsOnDuty(guardsResult.guards as any || [])
         }
 
         // Fetch all incidents
-        const incidentsResponse = await fetch("/api/logs?type=INCIDENT")
-        if (incidentsResponse.ok) {
-          const data = await incidentsResponse.json()
-          setIncidents(data.logs || [])
+        const incidentsResult = await getLogs({ type: 'INCIDENT' })
+        if (incidentsResult.success) {
+          setIncidents(incidentsResult.logs as any || [])
         }
       }
     } catch (error) {
@@ -133,19 +137,13 @@ export default function AdminDashboardPage() {
   const handleClockIn = async (data: { locationId?: string; shiftId?: string }) => {
     try {
       setIsLoading(true)
-      const response = await fetch("/api/duty-sessions", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      })
+      const result = await clockIn(data)
 
-      if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.error || "Failed to clock in")
+      if (!result.success) {
+        throw new Error(result.error || "Failed to clock in")
       }
 
-      const result = await response.json()
-      setDutySession(result.dutySession)
+      setDutySession(result.dutySession as any)
       toast.success("Successfully clocked in!")
       fetchDashboardData() // Refresh data
     } catch (error: any) {
@@ -161,15 +159,10 @@ export default function AdminDashboardPage() {
 
     try {
       setIsLoading(true)
-      const response = await fetch(`/api/duty-sessions/${dutySession.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ clockOut: true }),
-      })
+      const result = await clockOut({ dutySessionId: dutySession.id })
 
-      if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.error || "Failed to clock out")
+      if (!result.success) {
+        throw new Error(result.error || "Failed to clock out")
       }
 
       setDutySession(null)
@@ -187,19 +180,13 @@ export default function AdminDashboardPage() {
 
     try {
       setIsLoading(true)
-      const response = await fetch("/api/location-checkins", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          dutySessionId: dutySession.id,
-          locationId: data.locationId,
-          notes: data.notes,
-        }),
+      const result = await checkInToLocation({
+        locationId: data.locationId,
+        notes: data.notes,
       })
 
-      if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.error || "Failed to record check-in")
+      if (!result.success) {
+        throw new Error(result.error || "Failed to record check-in")
       }
 
       toast.success("Location check-in recorded!")
@@ -214,15 +201,13 @@ export default function AdminDashboardPage() {
   const handleIncidentReview = async (incidentId: string, data: { reviewNotes: string }) => {
     try {
       setIsLoading(true)
-      const response = await fetch(`/api/incidents/${incidentId}/review`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
+      const result = await reviewIncident({
+        incidentId,
+        reviewNotes: data.reviewNotes,
       })
 
-      if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.error || "Failed to submit review")
+      if (!result.success) {
+        throw new Error(result.error || "Failed to submit review")
       }
 
       toast.success("Incident review submitted!")

@@ -46,8 +46,15 @@ model User {
   id        String   @id @default(cuid())
   clerkId   String   @unique
   email     String   @unique
+  username  String?   @unique
   firstName String?
   lastName  String?
+  imageUrl  String?
+  phone     String?
+  streetAddress   String?
+  city            String?
+  state           String?
+  zipCode         String?
   role      Role     @default(GUARD)
 
   createdAt DateTime @default(now())
@@ -59,6 +66,7 @@ model User {
   dutySessions     DutySession[]
   locationCheckIns LocationCheckIn[]
 
+  @@index([username])
   @@index([clerkId])
   @@index([email])
 }
@@ -123,7 +131,8 @@ model Log {
   followUpRequired   Boolean?          @default(false)
   followUpNotes      String?           @db.Text
   weatherConditions  String?
-  photoUrls          String?           @db.Text  // JSON array of photo URLs (future)
+  photoUrls          String?           @db.Text  // JSON array of photo URLs
+  videoUrls          String?           @db.Text  // JSON array of video URLs
   reviewedBy         String?           // Supervisor who reviewed (for incidents)
   reviewedAt         DateTime?         // When reviewed
   reviewNotes        String?           @db.Text  // Supervisor notes

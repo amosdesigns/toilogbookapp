@@ -6,27 +6,13 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { X, Bell, AlertCircle, Info, CheckCircle, AlertTriangle } from "lucide-react"
 import { cn } from "@/lib/utils"
-
-export type NotificationType = "info" | "warning" | "success" | "error" | "alert"
-export type NotificationPriority = "low" | "medium" | "high" | "urgent"
-
-export interface Notification {
-  id: string
-  type: NotificationType
-  priority: NotificationPriority
-  title: string
-  message: string
-  actionLabel?: string
-  actionUrl?: string
-  dismissible?: boolean
-  createdAt: Date
-}
+import { getNotifications, dismissNotification as dismissNotificationAction, type Notification } from "@/app/actions"
 
 interface NotificationBannerProps {
   className?: string
 }
 
-const typeStyles = {
+const typeStyles: Record<Notification['type'], string> = {
   info: "border-blue-500 bg-blue-50 dark:bg-blue-950",
   warning: "border-yellow-500 bg-yellow-50 dark:bg-yellow-950",
   success: "border-green-500 bg-green-50 dark:bg-green-950",
@@ -34,7 +20,7 @@ const typeStyles = {
   alert: "border-orange-500 bg-orange-50 dark:bg-orange-950",
 }
 
-const typeIcons = {
+const typeIcons: Record<Notification['type'], any> = {
   info: Info,
   warning: AlertTriangle,
   success: CheckCircle,
@@ -42,7 +28,7 @@ const typeIcons = {
   alert: Bell,
 }
 
-const priorityColors = {
+const priorityColors: Record<Notification['priority'], string> = {
   low: "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200",
   medium: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
   high: "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200",
@@ -62,10 +48,9 @@ export function NotificationBanner({ className }: NotificationBannerProps) {
 
   const fetchNotifications = async () => {
     try {
-      const response = await fetch("/api/notifications")
-      if (response.ok) {
-        const data = await response.json()
-        setNotifications(data.notifications || [])
+      const result = await getNotifications()
+      if (result.success) {
+        setNotifications(result.notifications || [])
       }
     } catch (error) {
       console.error("Failed to fetch notifications:", error)
@@ -80,9 +65,10 @@ export function NotificationBanner({ className }: NotificationBannerProps) {
       setNotifications(prev => prev.filter(n => n.id !== notificationId))
 
       // Send dismiss request to server
-      await fetch(`/api/notifications/${notificationId}/dismiss`, {
-        method: "POST",
-      })
+      const result = await dismissNotificationAction(notificationId)
+      if (!result.success) {
+        throw new Error(result.error)
+      }
     } catch (error) {
       console.error("Failed to dismiss notification:", error)
       // Re-fetch to restore state if dismiss failed

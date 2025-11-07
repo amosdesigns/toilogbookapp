@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button"
 import { FileText, Calendar, AlertCircle } from "lucide-react"
 import Link from "next/link"
 import { toast } from "sonner"
+import { getCurrentDutySession, getLocations, clockIn, clockOut } from "@/app/actions"
 
 interface DutySession {
   id: string
@@ -43,19 +44,15 @@ export default function HomePage() {
         setIsFetching(true)
 
         // Fetch active duty session
-        const dutyResponse = await fetch("/api/duty-sessions?status=active")
-        if (dutyResponse.ok) {
-          const data = await dutyResponse.json()
-          if (data.dutySession) {
-            setDutySession(data.dutySession)
-          }
+        const dutyResult = await getCurrentDutySession()
+        if (dutyResult.success && dutyResult.dutySession) {
+          setDutySession(dutyResult.dutySession as any)
         }
 
         // Fetch locations for clock-in
-        const locationsResponse = await fetch("/api/locations")
-        if (locationsResponse.ok) {
-          const data = await locationsResponse.json()
-          setLocations(data.locations || [])
+        const locationsResult = await getLocations(true) // active only
+        if (locationsResult.success) {
+          setLocations(locationsResult.locations || [])
         }
       } catch (error) {
         console.error("Failed to fetch data:", error)
@@ -70,19 +67,13 @@ export default function HomePage() {
   const handleClockIn = async (data: { locationId?: string; shiftId?: string }) => {
     try {
       setIsLoading(true)
-      const response = await fetch("/api/duty-sessions", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      })
+      const result = await clockIn(data)
 
-      if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.error || "Failed to clock in")
+      if (!result.success) {
+        throw new Error(result.error || "Failed to clock in")
       }
 
-      const result = await response.json()
-      setDutySession(result.dutySession)
+      setDutySession(result.dutySession as any)
       toast.success("Successfully clocked in!")
     } catch (error: any) {
       toast.error(error.message || "Failed to clock in")
@@ -97,15 +88,10 @@ export default function HomePage() {
 
     try {
       setIsLoading(true)
-      const response = await fetch(`/api/duty-sessions/${dutySession.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ clockOut: true }),
-      })
+      const result = await clockOut({ dutySessionId: dutySession.id })
 
-      if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.error || "Failed to clock out")
+      if (!result.success) {
+        throw new Error(result.error || "Failed to clock out")
       }
 
       setDutySession(null)

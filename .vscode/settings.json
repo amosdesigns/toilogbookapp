@@ -3,7 +3,12 @@
   "WillLuke.nextjs.hasPrompted": true,
   "cSpell.words": [
     "checkin",
+    "cuid",
     "turbopack",
     "unreviewed"
-  ]
+  ],
+  "files.associations": {
+    "*.tsx": "typescriptreact",
+    "*.ts": "typescript"
+  }
 }
