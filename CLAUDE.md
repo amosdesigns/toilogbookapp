@@ -17,6 +17,7 @@ Town of Islip Marina Guard Logbook - A comprehensive security management system 
 - **UI**: Tailwind CSS v4 + shadcn/ui (Radix primitives)
 - **Forms**: react-hook-form + Zod validation
 - **State Management**: React Server Actions (no separate API routes)
+- **Testing**: Playwright for end-to-end testing
 
 ### Architecture Highlights
 - **Server Actions over API Routes**: All backend operations use Next.js Server Actions
@@ -33,6 +34,19 @@ npm run dev            # Start dev server
 npm run build          # Build for production
 npm start              # Start production server
 npm run lint           # Run ESLint
+```
+
+### Testing
+```bash
+npm test               # Run all Playwright tests
+npm run test:ui        # Run tests in UI mode (recommended for development)
+npm run test:headed    # Run tests in headed mode (see browser)
+npm run test:debug     # Debug tests with Playwright Inspector
+npm run test:chromium  # Run tests in Chromium only
+npm run test:firefox   # Run tests in Firefox only
+npm run test:webkit    # Run tests in WebKit/Safari only
+npm run test:mobile    # Run tests on mobile viewports
+npm run test:report    # View HTML test report
 ```
 
 ### Database Operations
@@ -417,12 +431,242 @@ Run `npm run db:seed` to populate database with test data:
 4. **Include related data**: Use Prisma's `include` for related records
 5. **Add indexes**: Consider performance when querying large datasets
 
-## Testing Approach
+## Testing with Playwright
 
-- Use Prisma Studio (`npx prisma studio`) for database inspection during development
+### Overview
+The application uses **Playwright** for end-to-end testing, providing comprehensive test coverage across:
+- Authentication flows
+- Duty management (clock in/out)
+- Log creation and management
+- Supervisor dashboard features
+- Role-based access control
+- Mobile and desktop viewports
+
+### Test Structure
+```
+tests/
+├── fixtures/
+│   └── auth.ts                  # Authentication fixtures for different roles
+├── utils/
+│   └── test-helpers.ts          # Helper functions for common operations
+├── auth.spec.ts                 # Authentication tests
+├── duty-management.spec.ts      # Duty clock in/out tests
+├── logs.spec.ts                 # Log creation and management tests
+├── supervisor.spec.ts           # Supervisor dashboard tests
+└── README.md                    # Detailed testing documentation
+```
+
+### Setup Test Environment
+
+**1. Install Playwright browsers:**
+```bash
+npx playwright install
+```
+
+**2. Create test users in Clerk:**
+Create users for each role (Guard, Supervisor, Admin, Super Admin) in your Clerk dashboard.
+
+**3. Configure test credentials:**
+Add test user credentials to `.env.local`:
+```env
+TEST_GUARD_EMAIL=guard@test.com
+TEST_GUARD_PASSWORD=testpass123
+
+TEST_SUPERVISOR_EMAIL=supervisor@test.com
+TEST_SUPERVISOR_PASSWORD=testpass123
+
+TEST_ADMIN_EMAIL=admin@test.com
+TEST_ADMIN_PASSWORD=testpass123
+
+TEST_SUPER_ADMIN_EMAIL=superadmin@test.com
+TEST_SUPER_ADMIN_PASSWORD=testpass123
+```
+
+### Running Tests
+
+**Development workflow:**
+```bash
+# Run tests in UI mode (best for development)
+npm run test:ui
+
+# Run specific test file
+npx playwright test auth.spec.ts
+
+# Debug failing tests
+npm run test:debug
+```
+
+**CI/CD workflow:**
+```bash
+# Run all tests (headless)
+npm test
+
+# View HTML report
+npm run test:report
+```
+
+### Authentication Fixtures
+
+Tests use role-based fixtures for authenticated sessions:
+
+```typescript
+import { test, expect } from './fixtures/auth'
+
+// Test with authenticated guard session
+test('guard can create logs', async ({ guardPage }) => {
+  await guardPage.goto('/logs')
+  // guardPage is already authenticated as a guard
+})
+
+// Test with authenticated supervisor session
+test('supervisor can review incidents', async ({ supervisorPage }) => {
+  await supervisorPage.goto('/admin/dashboard')
+  // supervisorPage is already authenticated as a supervisor
+})
+```
+
+**Available fixtures:**
+- `guardPage` - Authenticated as Guard
+- `supervisorPage` - Authenticated as Supervisor
+- `adminPage` - Authenticated as Admin
+- `superAdminPage` - Authenticated as Super Admin
+
+### Test Helpers
+
+Common operations are abstracted into helper functions (`tests/utils/test-helpers.ts`):
+
+```typescript
+import { clockIn, clockOut, createLog, getDutyStatus } from './utils/test-helpers'
+
+// Clock in as guard
+await clockIn(page, 'guard', 'Timber Point Marina')
+
+// Clock in as supervisor (roaming duty)
+await clockIn(page, 'supervisor')
+
+// Create a log entry
+await createLog(page, 'PATROL', 'Evening Patrol', 'All clear')
+
+// Get current duty status
+const status = await getDutyStatus(page) // 'on-duty' | 'off-duty'
+
+// Wait for toast notification
+await waitForToast(page, 'Success message')
+```
+
+### Writing New Tests
+
+**Basic test pattern:**
+```typescript
+import { test, expect } from '@playwright/test'
+
+test('test description', async ({ page }) => {
+  await page.goto('/')
+  await expect(page.locator('h1')).toContainText('Welcome')
+})
+```
+
+**Role-based test pattern:**
+```typescript
+import { test, expect } from './fixtures/auth'
+import { clockIn, createLog } from './utils/test-helpers'
+
+test.describe('Guard Workflow', () => {
+  test('complete duty cycle', async ({ guardPage }) => {
+    // Clock in
+    await clockIn(guardPage, 'guard', 'Timber Point Marina')
+
+    // Create log
+    await createLog(guardPage, 'PATROL', 'Test Patrol', 'Description')
+
+    // Clock out
+    await clockOut(guardPage)
+  })
+})
+```
+
+### Test Coverage
+
+**Authentication (`auth.spec.ts`)**
+- Sign in flow
+- Redirect unauthenticated users
+- Invalid credentials handling
+
+**Duty Management (`duty-management.spec.ts`)**
+- Guard clock in to specific location
+- Guard clock out
+- Supervisor roaming duty
+- Supervisor location check-ins
+- Validation (e.g., guard must select location)
+
+**Logs (`logs.spec.ts`)**
+- Create patrol logs
+- Create incident reports with severity
+- Create visitor check-ins
+- View log history
+- Filter logs by type
+- Supervisor incident review
+
+**Supervisor Features (`supervisor.spec.ts`)**
+- Access dashboard
+- View guards on duty
+- Send messages to guards
+- Force clock out guards
+- View incidents by status
+- Review incidents
+- Access control (guards blocked from admin routes)
+
+### Mobile Testing
+
+Tests automatically run on mobile viewports:
+- Mobile Chrome (Pixel 5)
+- Mobile Safari (iPhone 12)
+
+```bash
+# Run only mobile tests
+npm run test:mobile
+```
+
+### Best Practices
+
+1. **Use fixtures** - Avoid manual sign-in in every test
+2. **Use helpers** - Keep tests DRY with helper functions
+3. **Clean up state** - Clock out at the end of duty tests
+4. **Wait for events** - Use `waitForToast()`, `waitForSelector()` instead of hard timeouts
+5. **Descriptive names** - Clear test descriptions
+6. **Group tests** - Use `test.describe()` for related tests
+7. **Test both viewports** - Tests run on desktop and mobile automatically
+
+### Debugging Tests
+
+**View traces:**
+```bash
+npx playwright show-trace trace.zip
+```
+
+**Use Playwright Inspector:**
+```bash
+npm run test:debug
+```
+
+**VS Code Extension:**
+Install "Playwright Test for VSCode" for inline debugging
+
+### CI/CD Integration
+
+Tests are configured for CI environments:
+- 2 retries on failure
+- Single worker (sequential execution)
+- HTML reporter with screenshots
+- Trace on first retry
+
+## Manual Testing Approach
+
+For exploratory testing and development:
+- Use Prisma Studio (`npx prisma studio`) for database inspection
 - Run seed script to populate test data: `npm run db:seed`
 - Test role-based access by switching user roles in Clerk dashboard
-- Verify mobile layouts in browser responsive mode or on actual devices
+- Verify mobile layouts in browser responsive mode
 - Test duty workflows: clock in → create logs → clock out cycles
 - Test supervisor features: guards monitoring, incident reviews, location check-ins
 
