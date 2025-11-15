@@ -7,6 +7,8 @@
     "build": "prisma generate && next build",
     "start": "next start",
     "lint": "eslint",
+    "typecheck": "tsc --noEmit",
+    "validate": "npm run typecheck && npm run lint",
     "postinstall": "prisma generate",
     "db:seed": "tsx prisma/seed.ts",
     "test": "playwright test",

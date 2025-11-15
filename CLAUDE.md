@@ -2,6 +2,14 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Session Initialization
+
+**IMPORTANT - Auto-Initialize MCP Tools:**
+When starting work on this Next.js project, automatically call the `init` tool from `next-devtools-mcp` FIRST to set up proper context with official Next.js documentation and available development tools.
+
+**After Every Code Change:**
+Always run `npm run validate` to ensure TypeScript type checking and ESLint pass before committing changes.
+
 ## Project Overview
 
 Town of Islip Marina Guard Logbook - A comprehensive security management system for 11 marina locations with dual-interface architecture:
@@ -57,6 +65,54 @@ npx prisma generate           # Generate Prisma client (run after schema changes
 npx prisma db push            # Push schema changes without migration (dev only)
 npx prisma db seed            # Seed database (if seed script exists)
 ```
+
+### Code Quality & Validation
+```bash
+npm run typecheck          # Run TypeScript type checking
+npm run validate           # Run typecheck + lint (use after code changes)
+```
+
+**IMPORTANT**: After making any code changes, ALWAYS run `npm run validate` to ensure:
+- TypeScript types are correct (no compilation errors)
+- ESLint rules are satisfied (code quality standards)
+
+## MCP Server Integration
+
+This project is configured with Model Context Protocol (MCP) servers to enhance Claude Code capabilities:
+
+### Configured MCP Servers
+
+**1. GitHub MCP Server** - Official GitHub integration
+- **Tools**: Repository management, issue tracking, PR operations
+- **Setup**: Requires `GITHUB_PERSONAL_ACCESS_TOKEN` in `.env.local`
+- **Capabilities**: Create/update issues, manage PRs, repository operations
+
+**2. Next.js DevTools MCP** - Next.js runtime diagnostics
+- **Tools**: Live application state, runtime info, build diagnostics
+- **Auto-initialization**: Automatically calls `init` tool on session start
+- **Capabilities**: Access dev server state, inspect routes, analyze build
+
+**3. Vercel MCP Server** - Vercel deployment and project management
+- **Tools**: Deploy, manage projects, view deployments, environment variables
+- **Setup**: Requires `VERCEL_API_TOKEN` in `.env.local`
+- **Capabilities**: Trigger deployments, view logs, manage env vars
+
+### MCP Setup Instructions
+
+**1. Add environment variables to `.env.local`:**
+```bash
+# Copy from .env.example and fill in your tokens
+GITHUB_PERSONAL_ACCESS_TOKEN=ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+VERCEL_API_TOKEN=your_vercel_api_token
+```
+
+**2. Restart Claude Code** after adding environment variables for MCP servers to activate.
+
+**3. Next.js DevTools Auto-Init:** When starting work on this project, the Next.js DevTools MCP `init` tool is automatically called to set up proper context with official Next.js documentation.
+
+### MCP Server Configuration
+
+Configuration is stored in `.claude/mcp.json` and checked into version control for team collaboration.
 
 ## Architecture Overview
 
