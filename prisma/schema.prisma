@@ -47,8 +47,8 @@ model User {
   clerkId   String   @unique
   email     String   @unique
   username  String?   @unique
-  firstName String?
-  lastName  String?
+  firstName String
+  lastName  String
   imageUrl  String?
   phone     String?
   streetAddress   String?

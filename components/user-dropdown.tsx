@@ -1,6 +1,7 @@
 "use client"
 
-import { User, LogOut, UserCircle } from "lucide-react"
+import { useEffect, useState } from "react"
+import { LogOut } from "lucide-react"
 import { SignOutButton } from "@clerk/nextjs"
 import {
   DropdownMenu,
@@ -23,11 +24,31 @@ interface UserDropdownProps {
 }
 
 export function UserDropdown( { user }: UserDropdownProps ) {
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
   if ( !user ) {
     return null
   }
+
   const initials = `${user.firstName[0]}${user.lastName[0]}`.toUpperCase();
   const fullName = `${user.firstName} ${user.lastName}`
+
+  // Don't render dropdown until mounted to avoid hydration mismatch
+  if (!mounted) {
+    return (
+      <Button variant="ghost" size="icon" className="rounded-full">
+        <Avatar className="h-8 w-8">
+          <AvatarFallback className="bg-primary text-primary-foreground">
+            {initials}
+          </AvatarFallback>
+        </Avatar>
+      </Button>
+    )
+  }
 
   return (
     <DropdownMenu>

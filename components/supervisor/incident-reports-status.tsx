@@ -12,7 +12,7 @@ interface IncidentReport {
   id: string
   title: string
   description: string
-  severity: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL"
+  severity: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL" | null
   status: "LIVE" | "UPDATED" | "ARCHIVED" | "DRAFT"
   incidentTime: Date | null
   location: {
@@ -96,9 +96,11 @@ export function IncidentReportsStatus({
         <div className="flex items-start justify-between gap-4">
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-2 flex-wrap">
-              <Badge className={severityColors[incident.severity]}>
-                {incident.severity}
-              </Badge>
+              {incident.severity && (
+                <Badge className={severityColors[incident.severity]}>
+                  {incident.severity}
+                </Badge>
+              )}
               <Badge className={statusColors[incident.status]}>
                 <StatusIcon className="h-3 w-3 mr-1" />
                 {incident.status}
