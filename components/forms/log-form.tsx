@@ -22,8 +22,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { VideoUpload } from "@/components/video-upload"
-import { useState } from "react"
 
 interface LogFormProps {
   onSubmit: (data: CreateLogInput) => void | Promise<void>
@@ -31,7 +29,6 @@ interface LogFormProps {
   locations: Array<{ id: string; name: string }>
   shifts?: Array<{ id: string; name: string }>
   isLoading?: boolean
-  userId: string
 }
 
 export function LogForm({
@@ -40,12 +37,7 @@ export function LogForm({
   locations,
   shifts = [],
   isLoading = false,
-  userId,
 }: LogFormProps) {
-  const [videoUrls, setVideoUrls] = useState<string[]>(
-    defaultValues?.videoUrls ? JSON.parse(defaultValues.videoUrls) : []
-  )
-
   const form = useForm<CreateLogInput>({
     resolver: zodResolver(createLogSchema),
     defaultValues: {
@@ -55,25 +47,15 @@ export function LogForm({
       status: defaultValues?.status || "DRAFT",
       locationId: defaultValues?.locationId || "",
       shiftId: defaultValues?.shiftId || undefined,
-      videoUrls: defaultValues?.videoUrls || undefined,
     },
   })
 
   const logTypes = LogTypeEnum.options
   const statusOptions = RecordStatusEnum.options
 
-  const handleSubmit = (data: CreateLogInput) => {
-    // Add video URLs as JSON string
-    const submitData = {
-      ...data,
-      videoUrls: videoUrls.length > 0 ? JSON.stringify(videoUrls) : undefined,
-    }
-    onSubmit(submitData)
-  }
-
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
         <FormField
           control={form.control}
           name="type"
@@ -228,20 +210,6 @@ export function LogForm({
             </FormItem>
           )}
         />
-
-        <div className="space-y-2">
-          <FormLabel>Videos (Optional)</FormLabel>
-          <VideoUpload
-            onVideosChange={setVideoUrls}
-            initialVideos={videoUrls}
-            userId={userId}
-            maxVideos={3}
-            maxSizeMB={100}
-          />
-          <FormDescription>
-            Upload up to 3 videos (100MB max each)
-          </FormDescription>
-        </div>
 
         <div className="flex justify-end gap-4">
           <Button type="submit" disabled={isLoading}>

@@ -12,16 +12,11 @@ import { IncidentReportsStatus } from "@/components/supervisor/incident-reports-
 import { LocationLogbookViewer } from "@/components/supervisor/location-logbook-viewer"
 import { FileText, Calendar, MapPin, Users } from "lucide-react"
 import { toast } from "sonner"
-import {
-  getCurrentDutySession,
-  getLocations,
-  getGuardsOnDuty,
-  getLogs,
-  clockIn,
-  clockOut,
-  checkInToLocation,
-  reviewIncident,
-} from "@/app/actions"
+import { getActiveLocations } from "@/lib/actions/location-actions"
+import { getActiveDutySession, clockIn, clockOut, createLocationCheckIn } from "@/lib/actions/duty-session-actions"
+import { getGuardsOnDuty } from "@/lib/actions/guards-actions"
+import { getIncidents } from "@/lib/actions/log-actions"
+import { reviewIncident } from "@/lib/actions/incident-actions"
 
 interface DutySession {
   id: string
@@ -55,9 +50,9 @@ interface IncidentReport {
   id: string
   title: string
   description: string
-  severity: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL"
+  severity: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL" | null
   status: "LIVE" | "UPDATED" | "ARCHIVED" | "DRAFT"
-  incidentTime: Date
+  incidentTime: Date | null
   location: {
     name: string
   }
@@ -65,11 +60,11 @@ interface IncidentReport {
     firstName: string
     lastName: string
   }
-  peopleInvolved?: string
-  witnesses?: string
-  actionsTaken?: string
-  followUpRequired?: boolean
-  followUpNotes?: string
+  peopleInvolved?: string | null
+  witnesses?: string | null
+  actionsTaken?: string | null
+  followUpRequired?: boolean | null
+  followUpNotes?: string | null
   reviewedBy?: string | null
   reviewedAt?: Date | null
   createdAt: Date
@@ -101,30 +96,30 @@ export default function AdminDashboardPage() {
     try {
       setIsFetching(true)
 
-      // Fetch active duty session
-      const dutyResult = await getCurrentDutySession()
+      // Fetch active duty session using server action
+      const dutyResult = await getActiveDutySession()
       if (dutyResult.success && dutyResult.dutySession) {
-        setDutySession(dutyResult.dutySession as any)
+        setDutySession(dutyResult.dutySession)
       }
 
-      // Fetch locations
-      const locationsResult = await getLocations(true) // active only
+      // Fetch locations using server action
+      const locationsResult = await getActiveLocations()
       if (locationsResult.success) {
-        setLocations(locationsResult.locations || [])
+        setLocations(locationsResult.locations)
       }
 
       // Supervisor-only data
       if (isSupervisor) {
-        // Fetch guards on duty
+        // Fetch guards on duty using server action
         const guardsResult = await getGuardsOnDuty()
         if (guardsResult.success) {
-          setGuardsOnDuty(guardsResult.guards as any || [])
+          setGuardsOnDuty(guardsResult.guards)
         }
 
-        // Fetch all incidents
-        const incidentsResult = await getLogs({ type: 'INCIDENT' })
+        // Fetch all incidents using server action
+        const incidentsResult = await getIncidents()
         if (incidentsResult.success) {
-          setIncidents(incidentsResult.logs as any || [])
+          setIncidents(incidentsResult.logs)
         }
       }
     } catch (error) {
@@ -143,7 +138,7 @@ export default function AdminDashboardPage() {
         throw new Error(result.error || "Failed to clock in")
       }
 
-      setDutySession(result.dutySession as any)
+      setDutySession(result.dutySession!)
       toast.success("Successfully clocked in!")
       fetchDashboardData() // Refresh data
     } catch (error: any) {
@@ -159,7 +154,7 @@ export default function AdminDashboardPage() {
 
     try {
       setIsLoading(true)
-      const result = await clockOut({ dutySessionId: dutySession.id })
+      const result = await clockOut(dutySession.id)
 
       if (!result.success) {
         throw new Error(result.error || "Failed to clock out")
@@ -180,10 +175,11 @@ export default function AdminDashboardPage() {
 
     try {
       setIsLoading(true)
-      const result = await checkInToLocation({
-        locationId: data.locationId,
-        notes: data.notes,
-      })
+      const result = await createLocationCheckIn(
+        dutySession.id,
+        data.locationId,
+        data.notes
+      )
 
       if (!result.success) {
         throw new Error(result.error || "Failed to record check-in")
@@ -201,10 +197,7 @@ export default function AdminDashboardPage() {
   const handleIncidentReview = async (incidentId: string, data: { reviewNotes: string }) => {
     try {
       setIsLoading(true)
-      const result = await reviewIncident({
-        incidentId,
-        reviewNotes: data.reviewNotes,
-      })
+      const result = await reviewIncident(incidentId, data.reviewNotes)
 
       if (!result.success) {
         throw new Error(result.error || "Failed to submit review")

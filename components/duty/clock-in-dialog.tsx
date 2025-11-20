@@ -31,12 +31,23 @@ import { Button } from "@/components/ui/button"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { MapPin, Clock } from "lucide-react"
 
-const clockInSchema = z.object({
+// Schema for guards - locationId is required
+const guardClockInSchema = z.object({
+  locationId: z.string().min(1, "Location is required"),
+  shiftId: z.string().optional(),
+})
+
+// Schema for supervisors/admins - locationId is optional (roaming duty)
+const supervisorClockInSchema = z.object({
   locationId: z.string().optional(),
   shiftId: z.string().optional(),
 })
 
-type ClockInFormData = z.infer<typeof clockInSchema>
+// Union type to support both guard and supervisor form data
+type ClockInFormData = {
+  locationId?: string
+  shiftId?: string
+}
 
 interface ClockInDialogProps {
   open: boolean
@@ -59,9 +70,8 @@ export function ClockInDialog({
 }: ClockInDialogProps) {
   const isGuard = userRole === "GUARD"
   const [error, setError] = useState<string | null>(null)
-
   const form = useForm<ClockInFormData>({
-    resolver: zodResolver(clockInSchema),
+    resolver: zodResolver(isGuard ? guardClockInSchema : supervisorClockInSchema),
     defaultValues: {
       locationId: "",
       shiftId: "",

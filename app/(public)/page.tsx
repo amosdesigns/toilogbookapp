@@ -9,7 +9,8 @@ import { Button } from "@/components/ui/button"
 import { FileText, Calendar, AlertCircle } from "lucide-react"
 import Link from "next/link"
 import { toast } from "sonner"
-import { getCurrentDutySession, getLocations, clockIn, clockOut } from "@/app/actions"
+import { getActiveLocations } from "@/lib/actions/location-actions"
+import { getActiveDutySession, clockIn, clockOut } from "@/lib/actions/duty-session-actions"
 
 interface DutySession {
   id: string
@@ -43,16 +44,16 @@ export default function HomePage() {
       try {
         setIsFetching(true)
 
-        // Fetch active duty session
-        const dutyResult = await getCurrentDutySession()
+        // Fetch active duty session using server action
+        const dutyResult = await getActiveDutySession()
         if (dutyResult.success && dutyResult.dutySession) {
-          setDutySession(dutyResult.dutySession as any)
+          setDutySession(dutyResult.dutySession)
         }
 
-        // Fetch locations for clock-in
-        const locationsResult = await getLocations(true) // active only
+        // Fetch locations using server action
+        const locationsResult = await getActiveLocations()
         if (locationsResult.success) {
-          setLocations(locationsResult.locations || [])
+          setLocations(locationsResult.locations)
         }
       } catch (error) {
         console.error("Failed to fetch data:", error)
@@ -73,7 +74,7 @@ export default function HomePage() {
         throw new Error(result.error || "Failed to clock in")
       }
 
-      setDutySession(result.dutySession as any)
+      setDutySession(result.dutySession!)
       toast.success("Successfully clocked in!")
     } catch (error: any) {
       toast.error(error.message || "Failed to clock in")
@@ -88,7 +89,7 @@ export default function HomePage() {
 
     try {
       setIsLoading(true)
-      const result = await clockOut({ dutySessionId: dutySession.id })
+      const result = await clockOut(dutySession.id)
 
       if (!result.success) {
         throw new Error(result.error || "Failed to clock out")

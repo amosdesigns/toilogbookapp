@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { createLogSchema, RecordStatusEnum } from './log'
+import { createLogSchema } from './log'
 
 export const IncidentSeverityEnum = z.enum([
   'LOW',
@@ -12,18 +12,15 @@ export const createIncidentReportSchema = createLogSchema.extend({
   // Force type to be INCIDENT
   type: z.literal('INCIDENT'),
 
-  // Override status to be required (not optional with default)
-  status: RecordStatusEnum,
-
   // Incident-specific required fields
   severity: IncidentSeverityEnum,
-  incidentTime: z.date(),
+  incidentTime: z.coerce.date(),
 
   // Optional incident fields
   peopleInvolved: z.string().optional(),
   witnesses: z.string().optional(),
   actionsTaken: z.string().min(1, 'Please describe actions taken').optional(),
-  followUpRequired: z.boolean(),
+  followUpRequired: z.boolean().default(false),
   followUpNotes: z.string().optional(),
   weatherConditions: z.string().max(200).optional(),
 })
@@ -35,7 +32,6 @@ export const updateIncidentReportSchema = z.object({
   locationId: z.string().cuid().optional(),
   shiftId: z.string().cuid().optional().nullable(),
   status: z.enum(['LIVE', 'UPDATED', 'ARCHIVED', 'DRAFT']).optional(),
-  videoUrls: z.string().optional().nullable(),
 
   // Incident fields
   severity: IncidentSeverityEnum.optional(),

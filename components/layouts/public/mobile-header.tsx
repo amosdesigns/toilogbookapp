@@ -1,16 +1,22 @@
 "use client"
 
-import { UserButton, SignOutButton } from "@clerk/nextjs"
-import { LogOut, Menu } from "lucide-react"
+import { Menu } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { ThemeToggle } from "@/components/theme-toggle"
+import { UserDropdown } from "@/components/user-dropdown"
 
 interface MobileHeaderProps {
   title: string
   onMenuClick?: () => void
+  user: {
+    firstName: string
+    lastName: string
+    email: string
+    role: string
+  }
 }
 
-export function MobileHeader({ title, onMenuClick }: MobileHeaderProps) {
+export function MobileHeader({ title, onMenuClick, user }: MobileHeaderProps) {
   return (
     <header className="sticky top-0 z-40 w-full bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b border-border">
       <div className="flex items-center justify-between h-14 px-4">
@@ -24,13 +30,7 @@ export function MobileHeader({ title, onMenuClick }: MobileHeaderProps) {
         </h1>
         <div className="flex items-center gap-2">
           <ThemeToggle />
-          <SignOutButton redirectUrl="/sign-in">
-            <Button variant="ghost" size="sm">
-              <LogOut className="h-4 w-4 mr-2" />
-              Logout
-            </Button>
-          </SignOutButton>
-          <UserButton afterSignOutUrl="/sign-in" />
+          <UserDropdown user={user} />
         </div>
       </div>
     </header>

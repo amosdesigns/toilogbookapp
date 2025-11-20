@@ -12,7 +12,8 @@ import {
   ChevronLeft,
   LogOut,
 } from "lucide-react"
-import { UserButton, SignOutButton } from "@clerk/nextjs"
+import { SignOutButton } from "@clerk/nextjs"
+import { UserDropdown } from "@/components/user-dropdown"
 import {
   Sidebar,
   SidebarContent,
@@ -63,7 +64,16 @@ const navItems = [
   },
 ]
 
-export function AdminSidebar() {
+interface AdminSidebarProps {
+  user: {
+    firstName: string
+    lastName: string
+    email: string
+    role: string
+  }
+}
+
+export function AdminSidebar({ user }: AdminSidebarProps) {
   const pathname = usePathname()
 
   return (
@@ -118,7 +128,7 @@ export function AdminSidebar() {
       <SidebarFooter>
         <div className="flex items-center justify-between px-4 py-2">
           <div className="flex items-center gap-2">
-            <UserButton afterSignOutUrl="/sign-in" />
+            <UserDropdown user={user} />
             <ThemeToggle />
           </div>
           <SidebarTrigger>

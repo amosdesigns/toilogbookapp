@@ -14,7 +14,7 @@ interface IncidentReport {
   description: string
   severity: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL"
   status: "LIVE" | "UPDATED" | "ARCHIVED" | "DRAFT"
-  incidentTime: Date
+  incidentTime: Date | null
   location: {
     name: string
   }
@@ -120,7 +120,7 @@ export function IncidentReportsStatus({
 
             <div className="flex items-center gap-4 text-xs text-muted-foreground">
               <span>
-                Incident: {formatDateTime(incident.incidentTime)}
+                Incident: {incident.incidentTime ? formatDateTime(incident.incidentTime) : "N/A"}
               </span>
               <span>•</span>
               <span>

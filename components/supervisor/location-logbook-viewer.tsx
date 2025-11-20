@@ -14,7 +14,7 @@ import { Button } from "@/components/ui/button"
 import { MapPin, FileText, Clock, User, ExternalLink } from "lucide-react"
 import { formatDateTime } from "@/lib/utils"
 import Link from "next/link"
-import { getLogs } from "@/app/actions"
+import { getLogsByLocation } from "@/lib/actions/log-actions"
 
 interface LogEntry {
   id: string
@@ -57,9 +57,9 @@ export function LocationLogbookViewer({ locations }: LocationLogbookViewerProps)
 
     try {
       setIsLoading(true)
-      const result = await getLogs({ locationId, limit: 20 })
+      const result = await getLogsByLocation(locationId, 20)
       if (result.success) {
-        setLogs(result.logs as any || [])
+        setLogs(result.logs)
       }
     } catch (error) {
       console.error("Failed to fetch logs:", error)
