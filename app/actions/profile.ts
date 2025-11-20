@@ -46,7 +46,7 @@ export async function getMyProfile() {
     })
 
     let totalHours = 0
-    dutySessions.forEach((session) => {
+    dutySessions.forEach((session: typeof dutySessions[0]) => {
       if (session.clockOutTime) {
         const diff = new Date(session.clockOutTime).getTime() - new Date(session.clockInTime).getTime()
         totalHours += diff / (1000 * 60 * 60) // Convert to hours
@@ -112,7 +112,7 @@ export async function getMyDutySessions(limit: number = 10) {
     })
 
     // Calculate duration for each session
-    const sessionsWithDuration = dutySessions.map((session) => {
+    const sessionsWithDuration = dutySessions.map((session: typeof dutySessions[0]) => {
       let duration = 'Active'
       if (session.clockOutTime) {
         const diff = new Date(session.clockOutTime).getTime() - new Date(session.clockInTime).getTime()

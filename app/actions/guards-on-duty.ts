@@ -48,7 +48,7 @@ export async function getGuardsOnDuty() {
     })
 
     // Calculate hours on duty and format data
-    const guards = activeDutySessions.map((session) => {
+    const guards = activeDutySessions.map((session: typeof activeDutySessions[0]) => {
       const now = new Date()
       const start = new Date(session.clockInTime)
       const diff = now.getTime() - start.getTime()
