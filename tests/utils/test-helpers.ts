@@ -7,9 +7,15 @@ import type { Page } from '@playwright/test'
 /**
  * Wait for a toast notification to appear
  */
-export async function waitForToast(page: Page, message?: string) {
+export async function waitForToast(page: Page, message?: string | RegExp) {
   if (message) {
-    await page.waitForSelector(`[data-sonner-toast]:has-text("${message}")`)
+    if (typeof message === 'string') {
+      await page.waitForSelector(`[data-sonner-toast]:has-text("${message}")`)
+    } else {
+      // For RegExp, wait for the toast and check the text content
+      await page.waitForSelector('[data-sonner-toast]')
+      await page.locator('[data-sonner-toast]').filter({ hasText: message }).first().waitFor()
+    }
   } else {
     await page.waitForSelector('[data-sonner-toast]')
   }
