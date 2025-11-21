@@ -3,13 +3,14 @@
 import { auth } from "@clerk/nextjs/server"
 import { prisma } from "@/lib/prisma"
 import { revalidatePath } from "next/cache"
+import { to, type Result } from "@/lib/utils/RenderError"
 
-export async function getActiveDutySession() {
+export async function getActiveDutySession(): Promise<Result<any>> {
   try {
     const { userId } = await auth()
 
     if (!userId) {
-      return { success: false, error: "Unauthorized", dutySession: null }
+      return { ok: false, message: "Unauthorized" }
     }
 
     // Get user from database
@@ -18,7 +19,7 @@ export async function getActiveDutySession() {
     })
 
     if (!user) {
-      return { success: false, error: "User not found", dutySession: null }
+      return { ok: false, message: "User not found" }
     }
 
     // Get active duty session (clockOutTime is null)
@@ -41,10 +42,10 @@ export async function getActiveDutySession() {
       },
     })
 
-    return { success: true, dutySession: activeDutySession }
+    return { ok: true, data: activeDutySession }
   } catch (error) {
     console.error("[GET_ACTIVE_DUTY_SESSION]", error)
-    return { success: false, error: "Failed to fetch duty session", dutySession: null }
+    return to(error)
   }
 }
 

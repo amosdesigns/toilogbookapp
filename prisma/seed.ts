@@ -7,6 +7,11 @@ async function main() {
 
   // Clean existing data first
   console.log('🧹 Clearing existing data...')
+  await prisma.alert.deleteMany()
+  await prisma.maintenanceRequest.deleteMany()
+  await prisma.equipment.deleteMany()
+  await prisma.visitor.deleteMany()
+  await prisma.asset.deleteMany()
   await prisma.locationCheckIn.deleteMany()
   await prisma.log.deleteMany()
   await prisma.dutySession.deleteMany()
@@ -27,6 +32,11 @@ async function main() {
       firstName: 'Jerome',
       lastName: 'Amos',
       role: 'SUPER_ADMIN',
+      phone: '+15164507452',
+      streetAddress: '37 Maple Wing Drive',
+      city: 'Central Islip',
+      state: 'NY',
+      zipCode: '11722',
     },
   })
 
@@ -374,6 +384,236 @@ async function main() {
 
   console.log('✅ Log entries created')
 
+  // Create Assets
+  console.log('Creating assets...')
+
+  await prisma.asset.create({
+    data: {
+      name: 'Security Boat Alpha',
+      type: 'BOAT',
+      status: 'ACTIVE',
+      description: 'Primary patrol boat for marina security',
+      make: 'Boston Whaler',
+      model: 'Guardian 21',
+      year: 2022,
+      serialNumber: 'BWH2022G21-001',
+      registrationNumber: 'NY-1234-AB',
+      locationId: locations[0].id,
+      purchaseDate: new Date('2022-05-15'),
+      purchasePrice: 45000,
+      lastMaintenanceDate: new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000),
+      nextMaintenanceDate: new Date(now.getTime() + 60 * 24 * 60 * 60 * 1000),
+    },
+  })
+
+  await prisma.asset.create({
+    data: {
+      name: 'Security Vehicle #1',
+      type: 'VEHICLE',
+      status: 'ACTIVE',
+      description: 'Ford F-150 patrol truck',
+      make: 'Ford',
+      model: 'F-150',
+      year: 2021,
+      serialNumber: 'FORD2021F150-TOI-01',
+      registrationNumber: 'NY-TOI-001',
+      locationId: locations[1].id,
+      purchaseDate: new Date('2021-03-10'),
+      purchasePrice: 38000,
+    },
+  })
+
+  await prisma.asset.create({
+    data: {
+      name: 'Generator Backup Unit',
+      type: 'EQUIPMENT',
+      status: 'MAINTENANCE',
+      description: 'Emergency backup generator for main office',
+      make: 'Honda',
+      model: 'EU7000iS',
+      serialNumber: 'HONDA-GEN-7K-2020-05',
+      locationId: locations[0].id,
+      maintenanceNotes: 'Scheduled for oil change and filter replacement',
+    },
+  })
+
+  console.log('✅ Assets created')
+
+  // Create Visitors
+  console.log('Creating visitors...')
+
+  await prisma.visitor.create({
+    data: {
+      firstName: 'Michael',
+      lastName: 'Roberts',
+      email: 'mroberts@example.com',
+      phone: '+1516555 0123',
+      company: 'Marine Supplies Inc',
+      purpose: 'Delivery of safety equipment',
+      locationId: locations[0].id,
+      checkedInBy: guard1.id,
+      checkInTime: new Date(now.getTime() - 1 * 60 * 60 * 1000),
+      expectedDuration: 60,
+      vehicleMake: 'Ford',
+      vehicleModel: 'Transit',
+      licensePlate: 'NY-ABC-1234',
+      badgeNumber: 'V-001',
+    },
+  })
+
+  await prisma.visitor.create({
+    data: {
+      firstName: 'Jennifer',
+      lastName: 'Smith',
+      email: 'jsmith@boat.com',
+      phone: '+1516555 0456',
+      purpose: 'Boat inspection',
+      locationId: locations[1].id,
+      checkedInBy: guard2.id,
+      checkInTime: new Date(now.getTime() - 3 * 60 * 60 * 1000),
+      checkOutTime: new Date(now.getTime() - 1.5 * 60 * 60 * 1000),
+      checkedOutBy: guard2.id,
+      expectedDuration: 90,
+      licensePlate: 'NY-XYZ-5678',
+      badgeNumber: 'V-002',
+    },
+  })
+
+  console.log('✅ Visitors created')
+
+  // Create Equipment
+  console.log('Creating equipment...')
+
+  await prisma.equipment.create({
+    data: {
+      name: 'Radio #1',
+      description: 'Motorola two-way radio',
+      serialNumber: 'MOT-R1-2023-001',
+      status: 'CHECKED_OUT',
+      locationId: locations[0].id,
+      checkedOutTo: guard1.id,
+      checkedOutAt: new Date(now.getTime() - 4 * 60 * 60 * 1000),
+      lastMaintenance: new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000),
+    },
+  })
+
+  await prisma.equipment.create({
+    data: {
+      name: 'Radio #2',
+      description: 'Motorola two-way radio',
+      serialNumber: 'MOT-R2-2023-002',
+      status: 'CHECKED_OUT',
+      locationId: locations[1].id,
+      checkedOutTo: guard2.id,
+      checkedOutAt: new Date(now.getTime() - 2 * 60 * 60 * 1000),
+    },
+  })
+
+  await prisma.equipment.create({
+    data: {
+      name: 'Flashlight Set #1',
+      description: 'Heavy-duty LED flashlight with batteries',
+      serialNumber: 'FL-001',
+      status: 'AVAILABLE',
+      locationId: locations[0].id,
+    },
+  })
+
+  console.log('✅ Equipment created')
+
+  // Create Maintenance Requests
+  console.log('Creating maintenance requests...')
+
+  await prisma.maintenanceRequest.create({
+    data: {
+      title: 'Dock Section A - Wood Replacement',
+      description: 'Several planks on Dock Section A are rotting and need replacement. Safety hazard for pedestrians.',
+      priority: 'HIGH',
+      status: 'PENDING',
+      locationId: locations[0].id,
+      reportedBy: guard1.id,
+      estimatedCost: 2500,
+    },
+  })
+
+  await prisma.maintenanceRequest.create({
+    data: {
+      title: 'Security Camera Malfunction',
+      description: 'Camera #3 at main entrance is offline. Need to check power and connections.',
+      priority: 'URGENT',
+      status: 'IN_PROGRESS',
+      locationId: locations[1].id,
+      reportedBy: guard2.id,
+      assignedTo: admin.id,
+      assignedAt: new Date(now.getTime() - 1 * 60 * 60 * 1000),
+      estimatedCost: 500,
+    },
+  })
+
+  await prisma.maintenanceRequest.create({
+    data: {
+      title: 'Parking Lot Pothole Repair',
+      description: 'Large pothole developing near the main parking area entrance. Needs to be filled before it gets worse.',
+      priority: 'MEDIUM',
+      status: 'COMPLETED',
+      locationId: locations[0].id,
+      reportedBy: supervisor.id,
+      assignedTo: admin.id,
+      assignedAt: new Date(now.getTime() - 72 * 60 * 60 * 1000),
+      completedBy: admin.id,
+      completedAt: new Date(now.getTime() - 24 * 60 * 60 * 1000),
+      resolution: 'Pothole filled with asphalt patch. Area monitored for settlement.',
+      estimatedCost: 300,
+      actualCost: 275,
+    },
+  })
+
+  console.log('✅ Maintenance requests created')
+
+  // Create Alerts
+  console.log('Creating alerts...')
+
+  await prisma.alert.create({
+    data: {
+      title: 'Storm Warning - Secure All Equipment',
+      message: 'National Weather Service has issued a severe storm warning for tonight. Please secure all loose equipment, boats, and outdoor furniture. High winds expected.',
+      priority: 'CRITICAL',
+      locationId: null, // All locations
+      targetRole: null, // All roles
+      createdBy: supervisor.id,
+      activeFrom: new Date(),
+      activeUntil: new Date(now.getTime() + 24 * 60 * 60 * 1000),
+      isActive: true,
+    },
+  })
+
+  await prisma.alert.create({
+    data: {
+      title: 'Security Briefing - Friday 2PM',
+      message: 'Mandatory security briefing for all guards this Friday at 2PM in the main office. Topics include new protocols and equipment updates.',
+      priority: 'INFO',
+      targetRole: 'GUARD',
+      createdBy: supervisor.id,
+      activeFrom: new Date(),
+      activeUntil: new Date(now.getTime() + 5 * 24 * 60 * 60 * 1000),
+      isActive: true,
+    },
+  })
+
+  await prisma.alert.create({
+    data: {
+      title: 'Atlantique Marina - Suspicious Activity',
+      message: 'Be alert: Recent reports of suspicious individuals near the fuel dock area. If seen, do not approach - call supervisor immediately.',
+      priority: 'WARNING',
+      locationId: locations[0].id,
+      createdBy: supervisor.id,
+      activeFrom: new Date(),
+      isActive: true,
+    },
+  })
+
+  console.log('✅ Alerts created')
+
   console.log('🎉 Seed completed successfully!')
   console.log(`
     Created:
@@ -383,6 +623,11 @@ async function main() {
     - 4 Duty Sessions (3 active, 1 completed)
     - 2 Location Check-ins
     - 11 Log Entries (including incidents, patrols, maintenance, etc.)
+    - 3 Assets (boat, vehicle, equipment)
+    - 2 Visitors (1 current, 1 checked out)
+    - 3 Equipment items (2 checked out, 1 available)
+    - 3 Maintenance Requests (pending, in-progress, completed)
+    - 3 Alerts (critical, info, warning)
   `)
 }
 

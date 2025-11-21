@@ -29,6 +29,136 @@ npx prisma db seed            # Seed database (if seed script exists)
 
 ## Architecture Overview
 
+### **CRITICAL: Server Actions vs API Routes**
+
+⚠️ **This application uses Next.js 15/16 Server Actions for ALL database operations. DO NOT create API routes for database interactions.**
+
+**Always use Server Actions for:**
+- Database queries (read operations)
+- Database mutations (create, update, delete)
+- Authentication checks
+- Permission verification
+- Any server-side business logic
+
+**Server Action Pattern with Result<T> Type:**
+```typescript
+'use server' // Required at top of file
+
+import { prisma } from '@/lib/prisma'
+import { getCurrentUser } from '@/lib/auth/sync-user'
+import { revalidatePath } from 'next/cache'
+import { to, type Result } from '@/lib/utils/RenderError'
+
+// All actions MUST return Result<T>
+export async function myAction(data: any): Promise<Result<MyReturnType>> {
+  try {
+    // 1. Authenticate
+    const user = await getCurrentUser()
+    if (!user) {
+      return { ok: false, message: 'Unauthorized' }
+    }
+
+    // 2. Check permissions
+    if (!canPerformAction(user.role)) {
+      return { ok: false, message: 'Forbidden' }
+    }
+
+    // 3. Validate input with Zod
+    const validation = schema.safeParse(data)
+    if (!validation.success) {
+      return {
+        ok: false,
+        message: 'Invalid data',
+        meta: { errors: validation.error.flatten() }
+      }
+    }
+
+    // 4. Perform database operation
+    const result = await prisma.model.create({
+      data: validation.data
+    })
+
+    // 5. Revalidate cache to update UI
+    revalidatePath('/path/to/page')
+
+    // 6. Return success with data
+    return {
+      ok: true,
+      data: result,
+      message: 'Operation successful' // optional
+    }
+  } catch (error) {
+    // 7. Use 'to()' helper for error handling
+    console.error('Action error:', error)
+    return to(error)
+  }
+}
+```
+
+**Result<T> Type Definition:**
+```typescript
+// Success case
+{ ok: true, data: T, message?: string }
+
+// Error case
+{ ok: false, message: string, code?: string, meta?: Record<string, unknown> }
+```
+
+**File Organization:**
+- Place all Server Actions in `lib/actions/`
+- One file per resource (e.g., `logs.ts`, `users.ts`, `shifts.ts`)
+- Export individual action functions
+
+**Client Usage with Result<T>:**
+```typescript
+'use client'
+import { myAction } from '@/lib/actions/resource'
+import { toast } from 'sonner'
+
+// In component
+const handleSubmit = async (data) => {
+  const result = await myAction(data)
+
+  // Check result.ok instead of result.error
+  if (!result.ok) {
+    toast.error(result.message)
+    // Optional: access validation errors
+    if (result.meta?.errors) {
+      console.error('Validation errors:', result.meta.errors)
+    }
+  } else {
+    // Access data with result.data
+    console.log('Success:', result.data)
+    toast.success(result.message || 'Success!')
+  }
+}
+```
+
+**Error Handling Helpers:**
+```typescript
+import { to, isOk, unwrap, getOrElse } from '@/lib/utils/RenderError'
+
+// to() - Convert any error to Result format (use in catch blocks)
+return to(error)
+
+// isOk() - Type guard
+if (isOk(result)) {
+  console.log(result.data) // TypeScript knows this is safe
+}
+
+// unwrap() - Get data or throw (use when you're certain it succeeded)
+const data = unwrap(result)
+
+// getOrElse() - Get data or fallback
+const data = getOrElse(result, [])
+```
+
+**When to use API routes (`app/api/`):**
+- Webhooks (external services calling your app)
+- Third-party integrations
+- Public APIs for external consumers
+- **NEVER for internal database operations**
+
 ### Dual-Interface Design
 The application serves two distinct user groups with different UX patterns:
 
@@ -93,26 +223,24 @@ The application serves two distinct user groups with different UX patterns:
 - Linked to Clerk via `clerkId`
 - Role determines access level and UI routing
 
-### API Route Pattern
+### ~~API Route Pattern~~ (Deprecated - Use Server Actions Instead)
 
-API routes are organized by resource:
+⚠️ **IMPORTANT**: This section is kept for reference only. All database operations now use Server Actions in `lib/actions/`.
+
+**Server Actions are located in:**
 ```
-app/api/
-  ├── duty-sessions/
-  │   ├── route.ts              # POST (clock in), GET (query sessions)
-  │   └── [id]/route.ts         # PATCH (clock out), GET, DELETE
-  ├── location-checkins/
-  │   └── route.ts              # POST (supervisor check-in)
-  └── incidents/
-      ├── unreviewed/route.ts   # GET (supervisor alerts)
-      └── [id]/review/route.ts  # POST (review incident)
+lib/actions/
+  ├── logs.ts              # Log CRUD operations
+  ├── users.ts             # User operations
+  ├── locations.ts         # Location operations
+  ├── duty-sessions.ts     # Duty session management
+  └── [resource].ts        # One file per resource
 ```
 
-**API Response Pattern**: Use Next.js 16 `Response` with appropriate status codes
-```typescript
-return Response.json({ data }, { status: 200 })
-return Response.json({ error: "Message" }, { status: 400 })
-```
+**Do NOT create new API routes for database operations.** Only use `app/api/` for:
+- External webhooks
+- Third-party integrations
+- Public APIs
 
 ### Validation with Zod
 
