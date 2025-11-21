@@ -60,11 +60,12 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  logs             Log[]
-  reviewedLogs     Log[]              @relation("ReviewedLogs")
-  shifts           Shift[]
-  dutySessions     DutySession[]
-  locationCheckIns LocationCheckIn[]
+  logs                      Log[]
+  reviewedLogs              Log[]                     @relation("ReviewedLogs")
+  dutySessions              DutySession[]
+  locationCheckIns          LocationCheckIn[]
+  shiftAssignments          ShiftAssignment[]         // Shifts assigned to this user
+  recurringUserAssignments  RecurringUserAssignment[] // Recurring patterns assigned to this user
 
   @@index([username])
   @@index([clerkId])
@@ -77,38 +78,102 @@ model Location {
   description String?
   address     String?
   isActive    Boolean  @default(true)
+  maxCapacity Int?     // Optional: Maximum number of guards that can be assigned per shift
 
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  logs             Log[]
-  shifts           Shift[]
-  dutySessions     DutySession[]
-  locationCheckIns LocationCheckIn[]
+  logs                    Log[]
+  shifts                  Shift[]
+  dutySessions            DutySession[]
+  locationCheckIns        LocationCheckIn[]
+  recurringShiftPatterns  RecurringShiftPattern[]
 
   @@index([name])
 }
 
 model Shift {
-  id          String   @id @default(cuid())
-  name        String
-  startTime   DateTime
-  endTime     DateTime
-  locationId  String
-  supervisorId String?
+  id                    String   @id @default(cuid())
+  name                  String
+  startTime             DateTime
+  endTime               DateTime
+  locationId            String
+  recurringPatternId    String?  // Link to recurring pattern if this shift was generated from one
 
-  location    Location @relation(fields: [locationId], references: [id])
-  supervisor  User?    @relation(fields: [supervisorId], references: [id])
+  location              Location @relation(fields: [locationId], references: [id])
+  recurringPattern      RecurringShiftPattern? @relation(fields: [recurringPatternId], references: [id])
+
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  logs                  Log[]
+  dutySessions          DutySession[]
+  assignments           ShiftAssignment[] // Multiple users can be assigned
+
+  @@index([locationId])
+  @@index([recurringPatternId])
+  @@index([startTime, endTime])
+}
+
+// Many-to-many relationship between Shifts and Users
+model ShiftAssignment {
+  id          String   @id @default(cuid())
+  shiftId     String
+  userId      String
+  role        String?  // Optional: "PRIMARY", "BACKUP", "SUPERVISOR" etc.
+
+  shift       Shift    @relation(fields: [shiftId], references: [id], onDelete: Cascade)
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  logs         Log[]
-  dutySessions DutySession[]
+  @@unique([shiftId, userId]) // Prevent duplicate assignments
+  @@index([shiftId])
+  @@index([userId])
+}
+
+// Recurring shift patterns (e.g., "Every Monday 7am-3pm at Location X")
+model RecurringShiftPattern {
+  id              String   @id @default(cuid())
+  name            String
+  locationId      String
+  startTime       String   // Time only, e.g., "07:00"
+  endTime         String   // Time only, e.g., "15:00"
+  daysOfWeek      String   // JSON array: [1,3,5] for Mon, Wed, Fri (0=Sunday, 6=Saturday)
+  isActive        Boolean  @default(true)
+
+  // Pattern validity period
+  startDate       DateTime
+  endDate         DateTime? // Null = indefinite
+
+  location        Location @relation(fields: [locationId], references: [id])
+  shifts          Shift[]  // Shifts generated from this pattern
+  userAssignments RecurringUserAssignment[] // Default users for this pattern
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
   @@index([locationId])
-  @@index([supervisorId])
-  @@index([startTime, endTime])
+  @@index([isActive])
+}
+
+// Default user assignments for recurring patterns
+model RecurringUserAssignment {
+  id                    String                @id @default(cuid())
+  recurringPatternId    String
+  userId                String
+  role                  String?               // Optional: "PRIMARY", "BACKUP", etc.
+
+  recurringPattern      RecurringShiftPattern @relation(fields: [recurringPatternId], references: [id], onDelete: Cascade)
+  user                  User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt             DateTime              @default(now())
+  updatedAt             DateTime              @updatedAt
+
+  @@unique([recurringPatternId, userId])
+  @@index([recurringPatternId])
+  @@index([userId])
 }
 
 model Log {
