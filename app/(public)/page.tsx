@@ -46,8 +46,8 @@ export default function HomePage() {
 
         // Fetch active duty session using server action
         const dutyResult = await getActiveDutySession()
-        if (dutyResult.success && dutyResult.dutySession) {
-          setDutySession(dutyResult.dutySession)
+        if (dutyResult.ok && dutyResult.data) {
+          setDutySession(dutyResult.data)
         }
 
         // Fetch locations using server action
@@ -74,8 +74,15 @@ export default function HomePage() {
         throw new Error(result.error || "Failed to clock in")
       }
 
-      setDutySession(result.dutySession!)
+      // Refresh the duty session after clocking in
+      const dutyResult = await getActiveDutySession()
+      if (dutyResult.ok && dutyResult.data) {
+        setDutySession(dutyResult.data)
+      }
+
       toast.success("Successfully clocked in!")
+      // Reload the page to refresh header status
+      window.location.reload()
     } catch (error: any) {
       toast.error(error.message || "Failed to clock in")
       throw error
@@ -97,6 +104,8 @@ export default function HomePage() {
 
       setDutySession(null)
       toast.success("Successfully signed off duty!")
+      // Reload the page to refresh header status
+      window.location.reload()
     } catch (error: any) {
       toast.error(error.message || "Failed to clock out")
     } finally {

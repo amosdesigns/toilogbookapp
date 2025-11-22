@@ -27,7 +27,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { Search, Eye, Pencil, Trash2, Filter, X, Plus } from "lucide-react"
+import { Search, Eye, Pencil, Trash2, Filter, X, Plus, ChevronDown, ChevronUp, ChevronLeft, ChevronRight } from "lucide-react"
 import { formatDateTime } from "@/lib/utils"
 import { toast } from "sonner"
 import { LogForm } from "@/components/forms/log-form"
@@ -77,15 +77,24 @@ export default function LogsPage() {
   const [locations, setLocations] = useState<Array<{ id: string; name: string }>>([])
   const [loading, setLoading] = useState(true)
   const [currentUser, setCurrentUser] = useState<any>(null)
+  const [isMounted, setIsMounted] = useState(false)
+  const [currentLocationId, setCurrentLocationId] = useState<string | null>(null)
+  const [currentLocationName, setCurrentLocationName] = useState<string>("")
 
   // Filter states
   const [search, setSearch] = useState("")
-  const [selectedLocation, setSelectedLocation] = useState<string>("all")
+  const [selectedLocation, setSelectedLocation] = useState<string>("") // Will be set to current location or first location
   const [selectedType, setSelectedType] = useState<string>("all")
   const [selectedStatus, setSelectedStatus] = useState<string>("all")
   const [selectedYear, setSelectedYear] = useState<string>(new Date().getFullYear().toString())
   const [selectedMonth, setSelectedMonth] = useState<string>("all")
   const [selectedDayOfWeek, setSelectedDayOfWeek] = useState<string>("all")
+  const [showLast12Hours, setShowLast12Hours] = useState(true) // Default to last 12 hours
+  const [filtersOpen, setFiltersOpen] = useState(false) // Filters collapsed by default
+
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1)
+  const itemsPerPage = 10
 
   // Dialog states
   const [viewDialogOpen, setViewDialogOpen] = useState(false)
@@ -95,14 +104,49 @@ export default function LogsPage() {
   const [activeDutySession, setActiveDutySession] = useState<any>(null)
 
   useEffect(() => {
-    fetchLocations()
-    fetchCurrentUser()
-    fetchLogs()
+    setIsMounted(true)
+    const initPage = async () => {
+      await fetchLocations()
+      await fetchCurrentUser()
+      await fetchCurrentLocation()
+    }
+    initPage()
   }, [])
 
   useEffect(() => {
     applyFilters()
-  }, [logs, search, selectedLocation, selectedType, selectedStatus, selectedYear, selectedMonth, selectedDayOfWeek])
+  }, [logs, search, selectedLocation, selectedType, selectedStatus, selectedYear, selectedMonth, selectedDayOfWeek, showLast12Hours])
+
+  useEffect(() => {
+    // Fetch logs once on mount
+    fetchLogs()
+  }, [])
+
+  const fetchCurrentLocation = async () => {
+    try {
+      const result = await getActiveDutySession()
+
+      if (result.ok && result.data && result.data.locationId) {
+        // User is on duty at a specific location
+        setCurrentLocationId(result.data.locationId)
+        setCurrentLocationName(result.data.location?.name || "")
+        setSelectedLocation(result.data.locationId)
+      } else {
+        // User is not on duty - default to first marina location
+        if (locations.length > 0) {
+          setCurrentLocationId(locations[0].id)
+          setCurrentLocationName(locations[0].name)
+          setSelectedLocation(locations[0].id)
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching current location:', error)
+      // Default to first location on error
+      if (locations.length > 0) {
+        setSelectedLocation(locations[0].id)
+      }
+    }
+  }
 
   const fetchLocations = async () => {
     try {
@@ -111,10 +155,12 @@ export default function LogsPage() {
         console.error('Error fetching locations:', result.message)
       } else {
         setLocations(result.data)
+        return result.data
       }
     } catch (error) {
       console.error('Error fetching locations:', error)
     }
+    return []
   }
 
   const fetchCurrentUser = async () => {
@@ -133,7 +179,9 @@ export default function LogsPage() {
   const fetchLogs = async () => {
     try {
       setLoading(true)
-      const result = await getLogs()
+      // Fetch all logs - client-side filter will handle location filtering
+      const result = await getLogs({})
+
       if (!result.ok) {
         toast.error(result.message)
       } else {
@@ -150,6 +198,12 @@ export default function LogsPage() {
   const applyFilters = () => {
     let filtered = [...logs]
 
+    // Last 12 hours filter (applied first if enabled)
+    if (showLast12Hours) {
+      const twelveHoursAgo = new Date(Date.now() - 12 * 60 * 60 * 1000)
+      filtered = filtered.filter((log) => new Date(log.createdAt) >= twelveHoursAgo)
+    }
+
     // Search filter
     if (search) {
       const searchLower = search.toLowerCase()
@@ -160,8 +214,8 @@ export default function LogsPage() {
       )
     }
 
-    // Location filter
-    if (selectedLocation !== "all") {
+    // Location filter - always filter by selected location (no "all" option)
+    if (selectedLocation) {
       filtered = filtered.filter((log) => log.locationId === selectedLocation)
     }
 
@@ -194,6 +248,7 @@ export default function LogsPage() {
     }
 
     setFilteredLogs(filtered)
+    setCurrentPage(1) // Reset to first page when filters change
   }
 
   const handleViewLog = async (logId: string) => {
@@ -281,23 +336,43 @@ export default function LogsPage() {
   const canManageLog = (log: Log) => {
     if (!currentUser) return false
 
+    // Guards can ONLY edit their own logs - very important!
+    if (currentUser.role === 'GUARD') {
+      return currentUser.id === log.userId
+    }
+
     // Supervisors and above can manage any log
     if (['SUPER_ADMIN', 'ADMIN', 'SUPERVISOR'].includes(currentUser.role)) {
       return true
     }
 
-    // Guards can only manage their own logs
-    return currentUser.id === log.userId
+    return false
   }
 
   const clearFilters = () => {
     setSearch("")
-    setSelectedLocation("all")
+    // Reset to current location or first location, not "all"
+    if (currentLocationId) {
+      setSelectedLocation(currentLocationId)
+    } else if (locations.length > 0) {
+      setSelectedLocation(locations[0].id)
+    }
     setSelectedType("all")
     setSelectedStatus("all")
     setSelectedYear(new Date().getFullYear().toString())
     setSelectedMonth("all")
     setSelectedDayOfWeek("all")
+    setShowLast12Hours(true) // Reset to default
+  }
+
+  // Pagination calculations
+  const totalPages = Math.ceil(filteredLogs.length / itemsPerPage)
+  const startIndex = (currentPage - 1) * itemsPerPage
+  const endIndex = startIndex + itemsPerPage
+  const paginatedLogs = filteredLogs.slice(startIndex, endIndex)
+
+  const goToPage = (page: number) => {
+    setCurrentPage(Math.max(1, Math.min(page, totalPages)))
   }
 
   const years = Array.from({ length: 10 }, (_, i) => new Date().getFullYear() - i)
@@ -309,47 +384,63 @@ export default function LogsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Logs</h1>
-          <p className="text-muted-foreground">View and manage all security logs</p>
+      <div className="space-y-3">
+        <h1 className="text-3xl font-bold">Logs</h1>
+        <p className="text-sm text-muted-foreground">View and manage all security logs</p>
+        <div className="flex gap-2">
+          <Button
+            variant={showLast12Hours ? "default" : "outline"}
+            onClick={() => setShowLast12Hours(!showLast12Hours)}
+          >
+            {showLast12Hours ? "Last 12 Hours" : "All Time"}
+          </Button>
+          <Button onClick={handleCreateLog}>
+            <Plus className="h-4 w-4 mr-2" />
+            Create Log
+          </Button>
         </div>
-        <Button onClick={handleCreateLog}>
-          <Plus className="h-4 w-4 mr-2" />
-          Create Log
-        </Button>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Filter className="h-5 w-5" />
-            Filters
-          </CardTitle>
-          <CardDescription>Filter logs by location, date, type, and more</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {/* Search */}
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              placeholder="Search logs..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="pl-9"
-            />
-          </div>
+      {isMounted && (
+        <Card>
+          <CardHeader className="cursor-pointer" onClick={() => setFiltersOpen(!filtersOpen)}>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Filter className="h-5 w-5" />
+                <CardTitle>Filters</CardTitle>
+              </div>
+              <Button variant="ghost" size="sm">
+                {filtersOpen ? (
+                  <ChevronUp className="h-4 w-4" />
+                ) : (
+                  <ChevronDown className="h-4 w-4" />
+                )}
+              </Button>
+            </div>
+            <CardDescription>Filter logs by location, date, type, and more</CardDescription>
+          </CardHeader>
+          {filtersOpen && (
+            <CardContent className="space-y-4">
+            {/* Search */}
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                placeholder="Search logs..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="pl-9"
+              />
+            </div>
 
-          {/* Filters Grid */}
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {/* Filters Grid */}
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             <div>
               <label className="text-sm font-medium mb-2 block">Location</label>
               <Select value={selectedLocation} onValueChange={setSelectedLocation}>
                 <SelectTrigger>
-                  <SelectValue placeholder="All locations" />
+                  <SelectValue placeholder="Select location" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All locations</SelectItem>
                   {locations.map((location) => (
                     <SelectItem key={location.id} value={location.id}>
                       {location.name}
@@ -444,18 +535,29 @@ export default function LogsPage() {
             </div>
           </div>
 
-          <Button variant="outline" onClick={clearFilters} className="w-full md:w-auto">
-            <X className="h-4 w-4 mr-2" />
-            Clear Filters
-          </Button>
-        </CardContent>
-      </Card>
+              <Button variant="outline" onClick={clearFilters} className="w-full md:w-auto">
+                <X className="h-4 w-4 mr-2" />
+                Clear Filters
+              </Button>
+            </CardContent>
+          )}
+        </Card>
+      )}
 
       <Card>
         <CardHeader>
           <CardTitle>
-            All Logs ({filteredLogs.length})
+            {currentLocationName
+              ? `${currentLocationName} Logbook (${filteredLogs.length})`
+              : `Logbook (${filteredLogs.length})`
+            }
           </CardTitle>
+          <CardDescription>
+            {currentLocationId && currentLocationName && "Viewing logs from your current duty location"}
+            {!currentLocationId && currentLocationName && `Viewing logs from ${currentLocationName}`}
+            {showLast12Hours && " • Last 12 hours"}
+            {filteredLogs.length > itemsPerPage && ` • Page ${currentPage} of ${totalPages}`}
+          </CardDescription>
         </CardHeader>
         <CardContent>
           {loading ? (
@@ -465,22 +567,23 @@ export default function LogsPage() {
               No logs found matching your filters
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Date</TableHead>
-                    <TableHead>Type</TableHead>
-                    <TableHead>Title</TableHead>
-                    <TableHead>Location</TableHead>
-                    <TableHead>User</TableHead>
-                    <TableHead>Severity</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredLogs.map((log) => (
+            <>
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Date</TableHead>
+                      <TableHead>Type</TableHead>
+                      <TableHead>Title</TableHead>
+                      <TableHead>Location</TableHead>
+                      <TableHead>User</TableHead>
+                      <TableHead>Severity</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {paginatedLogs.map((log) => (
                     <TableRow key={log.id}>
                       <TableCell className="whitespace-nowrap">
                         {formatDateTime(log.createdAt)}
@@ -537,10 +640,73 @@ export default function LogsPage() {
                         </div>
                       </TableCell>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+
+              {/* Pagination Controls */}
+              {totalPages > 1 && (
+                <div className="flex flex-col gap-3 mt-4 pt-4 border-t">
+                  <div className="text-xs sm:text-sm text-muted-foreground text-center sm:text-left">
+                    Showing {startIndex + 1} to {Math.min(endIndex, filteredLogs.length)} of {filteredLogs.length} logs
+                  </div>
+                  <div className="flex items-center justify-center sm:justify-end gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => goToPage(currentPage - 1)}
+                      disabled={currentPage === 1}
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                      Previous
+                    </Button>
+
+                    {/* Page numbers - hidden on mobile, visible on tablet+ */}
+                    <div className="hidden md:flex items-center gap-1">
+                      {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => {
+                        // Show first page, last page, current page, and pages around current
+                        if (
+                          page === 1 ||
+                          page === totalPages ||
+                          (page >= currentPage - 1 && page <= currentPage + 1)
+                        ) {
+                          return (
+                            <Button
+                              key={page}
+                              variant={currentPage === page ? "default" : "outline"}
+                              size="sm"
+                              onClick={() => goToPage(page)}
+                              className="w-8"
+                            >
+                              {page}
+                            </Button>
+                          )
+                        } else if (page === currentPage - 2 || page === currentPage + 2) {
+                          return <span key={page} className="px-1">...</span>
+                        }
+                        return null
+                      })}
+                    </div>
+
+                    {/* Current page indicator - visible on mobile only */}
+                    <div className="md:hidden text-sm text-muted-foreground px-2">
+                      {currentPage} / {totalPages}
+                    </div>
+
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => goToPage(currentPage + 1)}
+                      disabled={currentPage === totalPages}
+                    >
+                      Next
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </>
           )}
         </CardContent>
       </Card>

@@ -5,19 +5,23 @@ const prisma = new PrismaClient()
 async function main() {
   console.log('🌱 Starting database seed...')
 
-  // Clean existing data first
+  // Clean existing data first using raw SQL with CASCADE
   console.log('🧹 Clearing existing data...')
-  await prisma.alert.deleteMany()
-  await prisma.maintenanceRequest.deleteMany()
-  await prisma.equipment.deleteMany()
-  await prisma.visitor.deleteMany()
-  await prisma.asset.deleteMany()
-  await prisma.locationCheckIn.deleteMany()
-  await prisma.log.deleteMany()
-  await prisma.dutySession.deleteMany()
-  await prisma.shift.deleteMany()
-  await prisma.location.deleteMany()
-  await prisma.user.deleteMany()
+
+  // Disable triggers and use TRUNCATE CASCADE for faster deletion
+  await prisma.$executeRaw`TRUNCATE TABLE "Alert" CASCADE`
+  await prisma.$executeRaw`TRUNCATE TABLE "MaintenanceRequest" CASCADE`
+  await prisma.$executeRaw`TRUNCATE TABLE "Equipment" CASCADE`
+  await prisma.$executeRaw`TRUNCATE TABLE "Visitor" CASCADE`
+  await prisma.$executeRaw`TRUNCATE TABLE "Asset" CASCADE`
+  await prisma.$executeRaw`TRUNCATE TABLE "notifications" CASCADE`
+  await prisma.$executeRaw`TRUNCATE TABLE "LocationCheckIn" CASCADE`
+  await prisma.$executeRaw`TRUNCATE TABLE "Log" CASCADE`
+  await prisma.$executeRaw`TRUNCATE TABLE "DutySession" CASCADE`
+  await prisma.$executeRaw`TRUNCATE TABLE "Shift" CASCADE`
+  await prisma.$executeRaw`TRUNCATE TABLE "Location" CASCADE`
+  await prisma.$executeRaw`TRUNCATE TABLE "User" CASCADE`
+
   console.log('✅ Database cleared successfully')
 
   // Create Users
@@ -169,23 +173,33 @@ async function main() {
   // Create Active Duty Sessions
   console.log('Creating duty sessions...')
 
-  // Guard 1 - Currently on duty at Captree
+  // Guard 1 - Currently on duty at Atlantique Marina (same location as Jerome)
   const dutySession1 = await prisma.dutySession.create({
     data: {
       userId: guard1.id,
-      locationId: locations[0].id,
+      locationId: locations[0].id, // Atlantique Marina
       shiftId: shift1.id,
-      clockInTime: new Date(now.getTime() - 4 * 60 * 60 * 1000), // 4 hours ago
+      clockInTime: new Date(now.getTime() - 8 * 60 * 60 * 1000), // 8 hours ago
       clockOutTime: null, // Still on duty
     },
   })
 
-  // Guard 2 - Currently on duty at Bayport
+  // Guard 2 - Currently on duty at Atlantique Marina (same location as Jerome and Guard 1)
   const dutySession2 = await prisma.dutySession.create({
     data: {
       userId: guard2.id,
-      locationId: locations[1].id,
-      clockInTime: new Date(now.getTime() - 2 * 60 * 60 * 1000), // 2 hours ago
+      locationId: locations[0].id, // Atlantique Marina (same location!)
+      clockInTime: new Date(now.getTime() - 6 * 60 * 60 * 1000), // 6 hours ago
+      clockOutTime: null, // Still on duty
+    },
+  })
+
+  // Jerome (Super Admin) - Currently on duty at Atlantique Marina (testing location-based filtering)
+  const jeromeDutySession = await prisma.dutySession.create({
+    data: {
+      userId: superAdmin.id,
+      locationId: locations[0].id, // Atlantique Marina
+      clockInTime: new Date(now.getTime() - 4 * 60 * 60 * 1000), // 4 hours ago
       clockOutTime: null, // Still on duty
     },
   })
@@ -383,6 +397,146 @@ async function main() {
   })
 
   console.log('✅ Log entries created')
+
+  // Create additional diverse logs for Jerome (Super Admin)
+  console.log('Creating additional logs for Jerome...')
+
+  const jeromeAdditionalLogs = [
+    // Day 1 - Recent
+    {
+      type: 'PATROL',
+      title: 'Evening Dock Patrol',
+      description: 'Completed routine patrol of all dock areas. All boats secured properly. No issues observed. Weather clear.',
+      status: 'LIVE',
+      locationId: locations[0].id,
+      userId: superAdmin.id,
+      createdAt: new Date(now.getTime() - 2 * 60 * 60 * 1000) // 2 hours ago
+    },
+    {
+      type: 'VISITOR_CHECKIN',
+      title: 'Contractor Check-in - Marine Repairs',
+      description: 'ABC Marine Services arrived for scheduled repair work on Slip 42. Credentials verified.',
+      status: 'LIVE',
+      locationId: locations[0].id,
+      userId: superAdmin.id,
+      peopleInvolved: 'John Smith - ABC Marine Services, License #12345',
+      createdAt: new Date(now.getTime() - 5 * 60 * 60 * 1000) // 5 hours ago
+    },
+    {
+      type: 'MAINTENANCE',
+      title: 'Dock Light Malfunction - Pier C',
+      description: 'Three dock lights on Pier C are not functioning. Lights C-12, C-15, and C-18 need bulb replacement or electrical inspection.',
+      status: 'LIVE',
+      locationId: locations[0].id,
+      userId: superAdmin.id,
+      followUpRequired: true,
+      followUpNotes: 'Maintenance team notified. Scheduled for repair tomorrow morning.',
+      createdAt: new Date(now.getTime() - 6 * 60 * 60 * 1000) // 6 hours ago
+    },
+    {
+      type: 'WEATHER',
+      title: 'Weather Observation - Strong Winds',
+      description: 'Wind speeds increasing. Gusts up to 25-30 mph from northeast. Advising boat owners to check lines and fenders.',
+      status: 'LIVE',
+      locationId: locations[0].id,
+      userId: superAdmin.id,
+      weatherConditions: 'Windy, partly cloudy. Temperature 58°F. Wind NE 25-30 mph gusts. Barometer falling.',
+      createdAt: new Date(now.getTime() - 1 * 60 * 60 * 1000) // 1 hour ago
+    },
+    {
+      type: 'PATROL',
+      title: 'Gate Security Check',
+      description: 'Verified all pedestrian gates are locked and functioning. Security codes rotated as scheduled.',
+      status: 'LIVE',
+      locationId: locations[0].id,
+      userId: superAdmin.id,
+      createdAt: new Date(now.getTime() - 45 * 60 * 1000) // 45 minutes ago
+    }
+  ]
+
+  for (const logData of jeromeAdditionalLogs) {
+    await prisma.log.create({ data: logData })
+  }
+
+  console.log('✅ Additional Jerome logs created')
+
+  // Create recent logs from other users (within last 12 hours)
+  console.log('Creating recent logs from other users...')
+
+  const recentUserLogs = [
+    // James (Guard 1) logs - At Atlantique Marina
+    {
+      type: 'PATROL',
+      title: 'Early Morning Dock Inspection',
+      description: 'Completed sunrise patrol of all dock sections. All boats secured, no issues detected. Weather conditions calm.',
+      status: 'LIVE',
+      locationId: locations[0].id, // Atlantique Marina
+      userId: guard1.id,
+      createdAt: new Date(now.getTime() - 7 * 60 * 60 * 1000) // 7 hours ago
+    },
+    {
+      type: 'INCIDENT',
+      title: 'Boat Taking on Water',
+      description: 'Slip owner reported boat taking on water. Assisted in pumping out bilge, identified loose through-hull fitting.',
+      status: 'LIVE',
+      locationId: locations[0].id, // Atlantique Marina
+      userId: guard1.id,
+      severity: 'MEDIUM',
+      incidentTime: new Date(now.getTime() - 5 * 60 * 60 * 1000),
+      actionsTaken: 'Assisted with bilge pump, helped owner tighten fitting, monitored for 30 minutes',
+      peopleInvolved: 'Boat owner: Mark Stevens, Slip A-42',
+      followUpRequired: true,
+      followUpNotes: 'Owner to have marine mechanic inspect tomorrow',
+      createdAt: new Date(now.getTime() - 5 * 60 * 60 * 1000) // 5 hours ago
+    },
+    {
+      type: 'VISITOR_CHECKIN',
+      title: 'Delivery - Marine Supplies',
+      description: 'Authorized delivery from Coastal Marine Supply. Driver credentials verified, escorted to dock area.',
+      status: 'LIVE',
+      locationId: locations[0].id, // Atlantique Marina
+      userId: guard1.id,
+      peopleInvolved: 'Driver: Tom Brown, Coastal Marine Supply, ID verified',
+      createdAt: new Date(now.getTime() - 3 * 60 * 60 * 1000) // 3 hours ago
+    },
+    // Maria (Guard 2) logs - At Atlantique Marina
+    {
+      type: 'PATROL',
+      title: 'Security Camera System Check',
+      description: 'Tested all security cameras and recording systems at Atlantique. All functioning properly.',
+      status: 'LIVE',
+      locationId: locations[0].id, // Atlantique Marina
+      userId: guard2.id,
+      createdAt: new Date(now.getTime() - 4 * 60 * 60 * 1000) // 4 hours ago
+    },
+    {
+      type: 'MAINTENANCE',
+      title: 'Dock Lighting Issues - Section B',
+      description: 'Several dock lights on Pier B not working. Checked breakers, appears to be bulb replacements needed.',
+      status: 'LIVE',
+      locationId: locations[0].id, // Atlantique Marina
+      userId: guard2.id,
+      followUpRequired: true,
+      followUpNotes: 'Maintenance scheduled to replace bulbs tomorrow morning',
+      createdAt: new Date(now.getTime() - 2 * 60 * 60 * 1000) // 2 hours ago
+    },
+    {
+      type: 'WEATHER',
+      title: 'Weather Update - Afternoon Conditions',
+      description: 'Clear skies, light winds from southwest. Temperature 72°F. Ideal boating conditions at Atlantique.',
+      status: 'LIVE',
+      locationId: locations[0].id, // Atlantique Marina
+      userId: guard2.id,
+      weatherConditions: 'Clear, 72°F, SW winds 5-10 mph, excellent visibility',
+      createdAt: new Date(now.getTime() - 1 * 60 * 60 * 1000) // 1 hour ago
+    }
+  ]
+
+  for (const logData of recentUserLogs) {
+    await prisma.log.create({ data: logData })
+  }
+
+  console.log('✅ Recent user logs created')
 
   // Create Assets
   console.log('Creating assets...')
@@ -620,9 +774,16 @@ async function main() {
     - 6 Users (1 Super Admin, 1 Admin, 1 Supervisor, 3 Guards)
     - 14 Marina Locations
     - 2 Shifts
-    - 4 Duty Sessions (3 active, 1 completed)
+    - 4 Duty Sessions (3 active at Atlantique Marina, 1 completed)
+      • Jerome (Super Admin), James (Guard 1), Maria (Guard 2) all at Atlantique Marina
     - 2 Location Check-ins
-    - 11 Log Entries (including incidents, patrols, maintenance, etc.)
+    - 22 Log Entries (11 base + 5 Jerome + 6 other guards)
+      • Location-Based: 11 logs at Atlantique Marina (within 12 hours)
+        - Jerome: 5 logs
+        - James (Guard 1): 3 logs
+        - Maria (Guard 2): 3 logs
+      • Guards only see logs from their current location
+      • Admins/Supervisors see all logs in admin interface
     - 3 Assets (boat, vehicle, equipment)
     - 2 Visitors (1 current, 1 checked out)
     - 3 Equipment items (2 checked out, 1 available)
