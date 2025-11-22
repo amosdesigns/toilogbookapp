@@ -6,10 +6,26 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+// Add these enums (typically after your existing enums like Status, Role, etc.)
+enum NotificationAction {
+  ADDED
+  SIGNED_IN
+  DELETED
+  UPDATED
 }
 
+enum NotificationTarget {
+  USER_PROFILE
+  EMAIL
+  SUPERVISOR
+  SUPERADMIN
+  GUARD
+  COMMENT
+}
 // Enums
 enum Role {
   SUPER_ADMIN
@@ -31,6 +47,7 @@ enum LogType {
   VISITOR_CHECKIN
   MAINTENANCE
   WEATHER
+  ON_DUTY_CHECKLIST
   OTHER
 }
 
@@ -38,6 +55,49 @@ enum IncidentSeverity {
   LOW
   MEDIUM
   HIGH
+  CRITICAL
+}
+
+enum AssetType {
+  BOAT
+  VEHICLE
+  EQUIPMENT
+  FACILITY
+  OTHER
+}
+
+enum AssetStatus {
+  ACTIVE
+  INACTIVE
+  MAINTENANCE
+  DAMAGED
+}
+
+enum EquipmentStatus {
+  AVAILABLE
+  CHECKED_OUT
+  MAINTENANCE
+  LOST
+  DAMAGED
+}
+
+enum MaintenanceStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum MaintenancePriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum AlertPriority {
+  INFO
+  WARNING
   CRITICAL
 }
 
@@ -60,11 +120,12 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  logs             Log[]
-  reviewedLogs     Log[]              @relation("ReviewedLogs")
-  shifts           Shift[]
-  dutySessions     DutySession[]
-  locationCheckIns LocationCheckIn[]
+  logs                     Log[]
+  reviewedLogs             Log[]                     @relation("ReviewedLogs")
+  shifts                   Shift[]
+  dutySessions             DutySession[]
+  locationCheckIns         LocationCheckIn[]
+  safetyChecklistResponses SafetyChecklistResponse[]
 
   @@index([username])
   @@index([clerkId])
@@ -81,10 +142,16 @@ model Location {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  logs             Log[]
-  shifts           Shift[]
-  dutySessions     DutySession[]
-  locationCheckIns LocationCheckIn[]
+  logs                     Log[]
+  shifts                   Shift[]
+  dutySessions             DutySession[]
+  locationCheckIns         LocationCheckIn[]
+  assets                   Asset[]
+  visitors                 Visitor[]
+  equipment                Equipment[]
+  maintenanceRequests      MaintenanceRequest[]
+  alerts                   Alert[]
+  safetyChecklistResponses SafetyChecklistResponse[]
 
   @@index([name])
 }
@@ -137,10 +204,11 @@ model Log {
   reviewedAt         DateTime?         // When reviewed
   reviewNotes        String?           @db.Text  // Supervisor notes
 
-  location      Location     @relation(fields: [locationId], references: [id])
-  shift         Shift?       @relation(fields: [shiftId], references: [id])
-  user          User         @relation(fields: [userId], references: [id])
-  reviewer      User?        @relation("ReviewedLogs", fields: [reviewedBy], references: [id])
+  location                Location                 @relation(fields: [locationId], references: [id])
+  shift                   Shift?                   @relation(fields: [shiftId], references: [id])
+  user                    User                     @relation(fields: [userId], references: [id])
+  reviewer                User?                    @relation("ReviewedLogs", fields: [reviewedBy], references: [id])
+  safetyChecklistResponse SafetyChecklistResponse?
 
   createdAt     DateTime     @default(now())
   updatedAt     DateTime     @updatedAt
@@ -172,7 +240,8 @@ model DutySession {
   shift       Shift?    @relation(fields: [shiftId], references: [id])
 
   // Supervisor location check-ins during this duty session
-  locationCheckIns LocationCheckIn[]
+  locationCheckIns         LocationCheckIn[]
+  safetyChecklistResponses SafetyChecklistResponse[]
 
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
@@ -203,4 +272,274 @@ model LocationCheckIn {
   @@index([locationId])
   @@index([userId])
   @@index([checkInTime])
+}
+
+// Add this model (typically after your existing models)
+model Notification {
+  id        String             @id @default(cuid())
+  user      String
+  action    NotificationAction
+  target    NotificationTarget
+  message   String?
+  unread    Boolean            @default(true)
+  createdAt DateTime           @default(now())
+  updateAt DateTime            @updatedAt
+
+  @@index([user])
+  @@index([unread])
+  @@map("notifications")
+}
+
+// Asset Management - Track boats, vehicles, equipment at marinas
+model Asset {
+  id          String      @id @default(cuid())
+  name        String
+  type        AssetType
+  status      AssetStatus @default(ACTIVE)
+  description String?     @db.Text
+
+  // Asset details
+  make        String?
+  model       String?
+  year        Int?
+  serialNumber String?    @unique
+  registrationNumber String?
+
+  // Location tracking
+  locationId  String?
+  location    Location?   @relation(fields: [locationId], references: [id])
+
+  // Ownership/Assignment
+  assignedTo  String?     // User ID if assigned to a person
+
+  // Value and insurance
+  purchaseDate DateTime?
+  purchasePrice Decimal?  @db.Decimal(10, 2)
+  insuranceInfo String?   @db.Text
+
+  // Maintenance tracking
+  lastMaintenanceDate DateTime?
+  nextMaintenanceDate DateTime?
+  maintenanceNotes    String?   @db.Text
+
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  @@index([locationId])
+  @@index([type])
+  @@index([status])
+  @@index([serialNumber])
+}
+
+// Visitor tracking
+model Visitor {
+  id            String    @id @default(cuid())
+  firstName     String
+  lastName      String
+  email         String?
+  phone         String?
+  company       String?
+  purpose       String?   @db.Text
+
+  // Visit details
+  locationId    String
+  location      Location  @relation(fields: [locationId], references: [id])
+
+  checkInTime   DateTime  @default(now())
+  checkOutTime  DateTime?
+  expectedDuration Int?    // Minutes
+
+  // Logged by
+  checkedInBy   String
+  checkedOutBy  String?
+
+  // Vehicle info
+  vehicleMake   String?
+  vehicleModel  String?
+  licensePlate  String?
+
+  // Badge/Pass
+  badgeNumber   String?
+
+  notes         String?   @db.Text
+
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([locationId])
+  @@index([checkInTime])
+  @@index([email])
+  @@index([licensePlate])
+}
+
+// Security equipment check-out system
+model Equipment {
+  id              String          @id @default(cuid())
+  name            String
+  description     String?
+  serialNumber    String?         @unique
+  status          EquipmentStatus @default(AVAILABLE)
+
+  // Location
+  locationId      String?
+  location        Location?       @relation(fields: [locationId], references: [id])
+
+  // Current checkout (if any)
+  checkedOutTo    String?         // User ID
+  checkedOutAt    DateTime?
+  expectedReturnAt DateTime?
+
+  // Maintenance
+  lastMaintenance DateTime?
+  nextMaintenance DateTime?
+
+  notes           String?         @db.Text
+
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  @@index([locationId])
+  @@index([status])
+  @@index([checkedOutTo])
+}
+
+// Maintenance request tracking
+model MaintenanceRequest {
+  id            String              @id @default(cuid())
+  title         String
+  description   String              @db.Text
+  priority      MaintenancePriority @default(MEDIUM)
+  status        MaintenanceStatus   @default(PENDING)
+
+  // Location
+  locationId    String
+  location      Location            @relation(fields: [locationId], references: [id])
+
+  // Reported by
+  reportedBy    String              // User ID
+  reportedAt    DateTime            @default(now())
+
+  // Assignment
+  assignedTo    String?             // User ID or maintenance team
+  assignedAt    DateTime?
+
+  // Completion
+  completedBy   String?
+  completedAt   DateTime?
+  resolution    String?             @db.Text
+
+  // Cost tracking
+  estimatedCost Decimal?            @db.Decimal(10, 2)
+  actualCost    Decimal?            @db.Decimal(10, 2)
+
+  // Photos
+  photoUrls     String?             @db.Text  // JSON array
+
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+
+  @@index([locationId])
+  @@index([status])
+  @@index([priority])
+  @@index([reportedBy])
+  @@index([assignedTo])
+}
+
+// System alerts for guards
+model Alert {
+  id          String        @id @default(cuid())
+  title       String
+  message     String        @db.Text
+  priority    AlertPriority @default(INFO)
+
+  // Targeting
+  locationId  String?       // Null = all locations
+  location    Location?     @relation(fields: [locationId], references: [id])
+
+  targetRole  Role?         // Null = all roles, or specific role
+
+  // Validity period
+  activeFrom  DateTime      @default(now())
+  activeUntil DateTime?
+
+  // Acknowledgment tracking
+  acknowledgedBy String?     @db.Text  // JSON array of user IDs
+
+  // Created by
+  createdBy   String        // User ID (admin/supervisor)
+
+  isActive    Boolean       @default(true)
+
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  @@index([locationId])
+  @@index([priority])
+  @@index([isActive])
+  @@index([activeFrom, activeUntil])
+}
+
+// Safety Equipment Checklist - Master list of items to check
+model SafetyChecklistItem {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String?  @db.Text
+  order       Int      @default(0) // Display order
+  isActive    Boolean  @default(true)
+
+  // Relation to individual checks
+  checks      SafetyChecklistItemCheck[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([isActive])
+  @@index([order])
+}
+
+// Safety Checklist Response - Completed checklist by a guard
+model SafetyChecklistResponse {
+  id             String    @id @default(cuid())
+  dutySessionId  String    // Which duty session this checklist is for
+  userId         String    // Guard who completed it
+  locationId     String    // Location where checklist was completed
+  logId          String?   @unique // Link to auto-created log entry
+
+  completedAt    DateTime  @default(now())
+
+  // Relations
+  dutySession    DutySession @relation(fields: [dutySessionId], references: [id], onDelete: Cascade)
+  user           User        @relation(fields: [userId], references: [id])
+  location       Location    @relation(fields: [locationId], references: [id])
+  log            Log?        @relation(fields: [logId], references: [id])
+  itemChecks     SafetyChecklistItemCheck[]
+
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  @@index([dutySessionId])
+  @@index([userId])
+  @@index([locationId])
+  @@index([completedAt])
+}
+
+// Individual item check within a checklist response
+model SafetyChecklistItemCheck {
+  id                        String   @id @default(cuid())
+  safetyChecklistResponseId String
+  safetyChecklistItemId     String
+
+  checked                   Boolean  @default(false)
+  notes                     String?  @db.Text // Optional notes if issue found
+
+  // Relations
+  response                  SafetyChecklistResponse @relation(fields: [safetyChecklistResponseId], references: [id], onDelete: Cascade)
+  item                      SafetyChecklistItem     @relation(fields: [safetyChecklistItemId], references: [id])
+
+  createdAt                 DateTime @default(now())
+  updatedAt                 DateTime @updatedAt
+
+  @@unique([safetyChecklistResponseId, safetyChecklistItemId])
+  @@index([safetyChecklistResponseId])
+  @@index([safetyChecklistItemId])
 }

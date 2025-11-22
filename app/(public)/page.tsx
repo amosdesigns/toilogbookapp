@@ -11,6 +11,7 @@ import Link from "next/link"
 import { toast } from "sonner"
 import { getActiveLocations } from "@/lib/actions/location-actions"
 import { getActiveDutySession, clockIn, clockOut } from "@/lib/actions/duty-session-actions"
+import { submitSafetyChecklist } from "@/lib/actions/safety-checklist-actions"
 
 interface DutySession {
   id: string
@@ -46,8 +47,8 @@ export default function HomePage() {
 
         // Fetch active duty session using server action
         const dutyResult = await getActiveDutySession()
-        if (dutyResult.success && dutyResult.dutySession) {
-          setDutySession(dutyResult.dutySession)
+        if (dutyResult.ok && dutyResult.data) {
+          setDutySession(dutyResult.data)
         }
 
         // Fetch locations using server action
@@ -65,18 +66,52 @@ export default function HomePage() {
     fetchData()
   }, [])
 
-  const handleClockIn = async (data: { locationId?: string; shiftId?: string }) => {
+  const handleClockIn = async (data: any) => {
     try {
       setIsLoading(true)
-      const result = await clockIn(data)
+
+      // Extract checklist data if present
+      const { checklistItems, ...clockInData } = data
+
+      // Step 1: Clock in to create duty session
+      const result = await clockIn(clockInData)
 
       if (!result.success) {
         throw new Error(result.error || "Failed to clock in")
       }
 
-      setDutySession(result.dutySession!)
+      // Step 2: If guard with checklist items, submit safety checklist
+      if (userRole === "GUARD" && checklistItems && clockInData.locationId) {
+        // Get the newly created duty session
+        const dutyResult = await getActiveDutySession()
+
+        if (dutyResult.ok && dutyResult.data) {
+          // Transform checklist data for submission
+          const items = Object.entries(checklistItems).map(([itemId, itemData]: [string, any]) => ({
+            itemId,
+            checked: itemData.checked,
+            notes: itemData.notes || undefined,
+          }))
+
+          // Submit the safety checklist
+          const checklistResult = await submitSafetyChecklist({
+            dutySessionId: dutyResult.data.id,
+            locationId: clockInData.locationId,
+            items,
+          })
+
+          if (!checklistResult.ok) {
+            console.error("Failed to submit safety checklist:", checklistResult.message)
+            toast.error("Clocked in, but failed to save safety checklist")
+          }
+        }
+      }
+
       toast.success("Successfully clocked in!")
+      // Reload the page to refresh header status
+      window.location.reload()
     } catch (error: any) {
+      console.error('Clock-in error:', error)
       toast.error(error.message || "Failed to clock in")
       throw error
     } finally {
@@ -97,12 +132,15 @@ export default function HomePage() {
 
       setDutySession(null)
       toast.success("Successfully signed off duty!")
+      // Reload the page to refresh header status
+      window.location.reload()
     } catch (error: any) {
       toast.error(error.message || "Failed to clock out")
     } finally {
       setIsLoading(false)
     }
   }
+
 
   if (isFetching) {
     return (
