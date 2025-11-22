@@ -83,22 +83,21 @@ export async function clockIn(data: { locationId?: string; shiftId?: string }) {
       return { success: false, error: "Guards must select a location" }
     }
 
-    // Supervisors should have null locationId (roaming)
+    // Supervisors/Admins should have null locationId for roaming duty
     let locationId = data.locationId
     if (
-      (user.role === "SUPERVISOR" ||
-        user.role === "ADMIN" ||
-        user.role === "SUPER_ADMIN") &&
-      data.locationId
+      user.role === "SUPERVISOR" ||
+      user.role === "ADMIN" ||
+      user.role === "SUPER_ADMIN"
     ) {
-      locationId = undefined // Force null for roaming duty
+      locationId = null // Force null for roaming duty
     }
 
     // Create duty session
     const dutySession = await prisma.dutySession.create({
       data: {
         userId: user.id,
-        locationId: locationId || null,
+        locationId: locationId,
         shiftId: data.shiftId || null,
       },
       include: {

@@ -72,21 +72,28 @@ export function MobileHeader({ title, onMenuClick, user }: MobileHeaderProps) {
             height={32}
             className="hidden dark:block"
           />
-          <h1 className="text-lg font-semibold truncate">
+          <h1 className="text-xs font-semibold truncate">
             {title}
           </h1>
         </div>
 
-        {/* Duty Status Badge - Between title and controls */}
-        {isOnDuty ? (
-          <Badge variant="default" className="bg-green-600 hover:bg-green-700 text-white text-xs shrink-0">
-            On Duty
-          </Badge>
-        ) : (
-          <Badge variant="secondary" className="text-xs shrink-0">
-            Off Duty
-          </Badge>
-        )}
+        {/* Duty Status Badge with Location - Between title and controls */}
+        <div className="flex items-center gap-2">
+          {isOnDuty ? (
+            <>
+              <Badge variant="default" className="bg-green-600 hover:bg-green-700 text-white text-xs shrink-0">
+                On Duty
+              </Badge>
+              <span className="text-xs font-medium text-muted-foreground shrink-0">
+                @ {locationName ? (locationName.length > 10 ? locationName.slice(0, 10) + "..." : locationName) : "Roaming"}
+              </span>
+            </>
+          ) : (
+            <Badge variant="secondary" className="text-xs shrink-0">
+              Off Duty
+            </Badge>
+          )}
+        </div>
 
         <div className="flex items-center gap-2 shrink-0">
           <ThemeToggle />

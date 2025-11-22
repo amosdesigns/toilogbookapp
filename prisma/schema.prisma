@@ -47,6 +47,7 @@ enum LogType {
   VISITOR_CHECKIN
   MAINTENANCE
   WEATHER
+  ON_DUTY_CHECKLIST
   OTHER
 }
 
@@ -119,11 +120,12 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  logs             Log[]
-  reviewedLogs     Log[]              @relation("ReviewedLogs")
-  shifts           Shift[]
-  dutySessions     DutySession[]
-  locationCheckIns LocationCheckIn[]
+  logs                     Log[]
+  reviewedLogs             Log[]                     @relation("ReviewedLogs")
+  shifts                   Shift[]
+  dutySessions             DutySession[]
+  locationCheckIns         LocationCheckIn[]
+  safetyChecklistResponses SafetyChecklistResponse[]
 
   @@index([username])
   @@index([clerkId])
@@ -140,15 +142,16 @@ model Location {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  logs                 Log[]
-  shifts               Shift[]
-  dutySessions         DutySession[]
-  locationCheckIns     LocationCheckIn[]
-  assets               Asset[]
-  visitors             Visitor[]
-  equipment            Equipment[]
-  maintenanceRequests  MaintenanceRequest[]
-  alerts               Alert[]
+  logs                     Log[]
+  shifts                   Shift[]
+  dutySessions             DutySession[]
+  locationCheckIns         LocationCheckIn[]
+  assets                   Asset[]
+  visitors                 Visitor[]
+  equipment                Equipment[]
+  maintenanceRequests      MaintenanceRequest[]
+  alerts                   Alert[]
+  safetyChecklistResponses SafetyChecklistResponse[]
 
   @@index([name])
 }
@@ -201,10 +204,11 @@ model Log {
   reviewedAt         DateTime?         // When reviewed
   reviewNotes        String?           @db.Text  // Supervisor notes
 
-  location      Location     @relation(fields: [locationId], references: [id])
-  shift         Shift?       @relation(fields: [shiftId], references: [id])
-  user          User         @relation(fields: [userId], references: [id])
-  reviewer      User?        @relation("ReviewedLogs", fields: [reviewedBy], references: [id])
+  location                Location                 @relation(fields: [locationId], references: [id])
+  shift                   Shift?                   @relation(fields: [shiftId], references: [id])
+  user                    User                     @relation(fields: [userId], references: [id])
+  reviewer                User?                    @relation("ReviewedLogs", fields: [reviewedBy], references: [id])
+  safetyChecklistResponse SafetyChecklistResponse?
 
   createdAt     DateTime     @default(now())
   updatedAt     DateTime     @updatedAt
@@ -236,7 +240,8 @@ model DutySession {
   shift       Shift?    @relation(fields: [shiftId], references: [id])
 
   // Supervisor location check-ins during this duty session
-  locationCheckIns LocationCheckIn[]
+  locationCheckIns         LocationCheckIn[]
+  safetyChecklistResponses SafetyChecklistResponse[]
 
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
@@ -472,4 +477,69 @@ model Alert {
   @@index([priority])
   @@index([isActive])
   @@index([activeFrom, activeUntil])
+}
+
+// Safety Equipment Checklist - Master list of items to check
+model SafetyChecklistItem {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String?  @db.Text
+  order       Int      @default(0) // Display order
+  isActive    Boolean  @default(true)
+
+  // Relation to individual checks
+  checks      SafetyChecklistItemCheck[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([isActive])
+  @@index([order])
+}
+
+// Safety Checklist Response - Completed checklist by a guard
+model SafetyChecklistResponse {
+  id             String    @id @default(cuid())
+  dutySessionId  String    // Which duty session this checklist is for
+  userId         String    // Guard who completed it
+  locationId     String    // Location where checklist was completed
+  logId          String?   @unique // Link to auto-created log entry
+
+  completedAt    DateTime  @default(now())
+
+  // Relations
+  dutySession    DutySession @relation(fields: [dutySessionId], references: [id], onDelete: Cascade)
+  user           User        @relation(fields: [userId], references: [id])
+  location       Location    @relation(fields: [locationId], references: [id])
+  log            Log?        @relation(fields: [logId], references: [id])
+  itemChecks     SafetyChecklistItemCheck[]
+
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  @@index([dutySessionId])
+  @@index([userId])
+  @@index([locationId])
+  @@index([completedAt])
+}
+
+// Individual item check within a checklist response
+model SafetyChecklistItemCheck {
+  id                        String   @id @default(cuid())
+  safetyChecklistResponseId String
+  safetyChecklistItemId     String
+
+  checked                   Boolean  @default(false)
+  notes                     String?  @db.Text // Optional notes if issue found
+
+  // Relations
+  response                  SafetyChecklistResponse @relation(fields: [safetyChecklistResponseId], references: [id], onDelete: Cascade)
+  item                      SafetyChecklistItem     @relation(fields: [safetyChecklistItemId], references: [id])
+
+  createdAt                 DateTime @default(now())
+  updatedAt                 DateTime @updatedAt
+
+  @@unique([safetyChecklistResponseId, safetyChecklistItemId])
+  @@index([safetyChecklistResponseId])
+  @@index([safetyChecklistItemId])
 }

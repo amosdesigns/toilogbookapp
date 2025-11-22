@@ -15,6 +15,9 @@ async function main() {
   await prisma.$executeRaw`TRUNCATE TABLE "Visitor" CASCADE`
   await prisma.$executeRaw`TRUNCATE TABLE "Asset" CASCADE`
   await prisma.$executeRaw`TRUNCATE TABLE "notifications" CASCADE`
+  await prisma.$executeRaw`TRUNCATE TABLE "SafetyChecklistItemCheck" CASCADE`
+  await prisma.$executeRaw`TRUNCATE TABLE "SafetyChecklistResponse" CASCADE`
+  await prisma.$executeRaw`TRUNCATE TABLE "SafetyChecklistItem" CASCADE`
   await prisma.$executeRaw`TRUNCATE TABLE "LocationCheckIn" CASCADE`
   await prisma.$executeRaw`TRUNCATE TABLE "Log" CASCADE`
   await prisma.$executeRaw`TRUNCATE TABLE "DutySession" CASCADE`
@@ -768,6 +771,28 @@ async function main() {
 
   console.log('✅ Alerts created')
 
+  // Create Safety Checklist Items
+  console.log('Creating safety checklist items...')
+
+  const safetyItems = [
+    { name: 'Fire Extinguisher', description: 'Check fire extinguisher is present, charged, and accessible', order: 1 },
+    { name: 'First Aid Kit', description: 'Verify first aid kit is stocked and in good condition', order: 2 },
+    { name: 'Life Jackets', description: 'Confirm life jackets are available and in good condition', order: 3 },
+    { name: 'Radio', description: 'Test radio functionality and battery level', order: 4 },
+    { name: 'Radio Charger', description: 'Verify radio charger is present and functional', order: 5 },
+    { name: 'Fire Exhaust System', description: 'Check fire exhaust/ventilation system is operational', order: 6 },
+    { name: 'Emergency Blanket', description: 'Confirm emergency blanket is present and accessible', order: 7 },
+    { name: 'Life Preserver Ring and Rope', description: 'Verify life preserver ring and rope are present and in good condition', order: 8 },
+  ]
+
+  for (const item of safetyItems) {
+    await prisma.safetyChecklistItem.create({
+      data: item,
+    })
+  }
+
+  console.log('✅ Safety checklist items created')
+
   console.log('🎉 Seed completed successfully!')
   console.log(`
     Created:
@@ -787,6 +812,7 @@ async function main() {
     - 3 Assets (boat, vehicle, equipment)
     - 2 Visitors (1 current, 1 checked out)
     - 3 Equipment items (2 checked out, 1 available)
+    - 8 Safety Checklist Items (on-duty checklist)
     - 3 Maintenance Requests (pending, in-progress, completed)
     - 3 Alerts (critical, info, warning)
   `)
