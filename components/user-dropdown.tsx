@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { LogOut } from "lucide-react"
+import {  LogOut } from "lucide-react"
 import { SignOutButton } from "@clerk/nextjs"
 import {
   DropdownMenu,
@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import Link from "next/link"
 
 interface UserDropdownProps {
   user: {
@@ -73,6 +74,14 @@ export function UserDropdown( { user }: UserDropdownProps ) {
             </p>
           </div>
         </DropdownMenuLabel>
+        {(user.role!== "GUARD" ) ? (
+          <>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem asChild className="cursor-pointer">
+              <Link href="/dashboard">Dashboard</Link>
+            </DropdownMenuItem>
+          </>
+        ):""}
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild className="cursor-pointer">
           <SignOutButton redirectUrl="/sign-in">
@@ -84,5 +93,5 @@ export function UserDropdown( { user }: UserDropdownProps ) {
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
-  )
+  );
 }

@@ -1,9 +1,8 @@
 "use client"
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Clock, MapPin, AlertCircle } from "lucide-react"
+import { Clock, AlertCircle } from "lucide-react"
 import { formatDateTime } from "@/lib/utils"
 
 interface DutySession {
@@ -50,31 +49,11 @@ export function DutyStatusCard({
   return (
     <Card>
       <CardHeader>
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-lg">Current Status</CardTitle>
-          <Badge variant={isOnDuty ? "default" : "secondary"}>
-            {isOnDuty ? "● On Duty" : "○ Off Duty"}
-          </Badge>
-        </div>
+        <CardTitle className="text-lg">Current Status</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         {isOnDuty && dutySession ? (
           <>
-            {/* Location Info */}
-            <div className="flex items-start gap-3">
-              <MapPin className="h-5 w-5 mt-0.5 text-muted-foreground" />
-              <div className="flex-1">
-                <p className="font-medium">
-                  {isRoaming ? "Roaming Duty" : dutySession.location?.name}
-                </p>
-                {isRoaming && (
-                  <p className="text-sm text-muted-foreground">
-                    Supervisor - All locations
-                  </p>
-                )}
-              </div>
-            </div>
-
             {/* Time Info */}
             <div className="flex items-start gap-3">
               <Clock className="h-5 w-5 mt-0.5 text-muted-foreground" />

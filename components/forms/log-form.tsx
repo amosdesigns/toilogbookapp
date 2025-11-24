@@ -29,6 +29,7 @@ interface LogFormProps {
   locations: Array<{ id: string; name: string }>
   shifts?: Array<{ id: string; name: string }>
   isLoading?: boolean
+  disableLocation?: boolean
 }
 
 export function LogForm({
@@ -37,6 +38,7 @@ export function LogForm({
   locations,
   shifts = [],
   isLoading = false,
+  disableLocation = false,
 }: LogFormProps) {
   const form = useForm<CreateLogInput>({
     resolver: zodResolver(createLogSchema),
@@ -51,7 +53,15 @@ export function LogForm({
   })
 
   const logTypes = LogTypeEnum.options
-  const statusOptions = RecordStatusEnum.options
+  // Filter out ARCHIVED status for create/edit forms
+  const statusOptions = RecordStatusEnum.options.filter(status => status !== 'ARCHIVED')
+
+  // Status indicator colors
+  const statusColors = {
+    LIVE: "bg-green-500",
+    UPDATED: "bg-yellow-500",
+    DRAFT: "bg-white dark:bg-gray-400",
+  }
 
   return (
     <Form {...form}>
@@ -62,7 +72,7 @@ export function LogForm({
           render={({ field }) => (
             <FormItem>
               <FormLabel>Log Type</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value}>
+              <Select onValueChange={field.onChange} value={field.value}>
                 <FormControl>
                   <SelectTrigger>
                     <SelectValue placeholder="Select log type" />
@@ -122,33 +132,38 @@ export function LogForm({
           )}
         />
 
-        <FormField
-          control={form.control}
-          name="locationId"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Location</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value}>
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select location" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  {locations.map((location) => (
-                    <SelectItem key={location.id} value={location.id}>
-                      {location.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <FormDescription>
-                Marina location where this log entry occurred
-              </FormDescription>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+        {!disableLocation && (
+          <FormField
+            control={form.control}
+            name="locationId"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Location</FormLabel>
+                <Select
+                  onValueChange={field.onChange}
+                  value={field.value}
+                >
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select location" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {locations.map((location) => (
+                      <SelectItem key={location.id} value={location.id}>
+                        {location.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <FormDescription>
+                  Marina location where this log entry occurred
+                </FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        )}
 
         {shifts.length > 0 && (
           <FormField
@@ -159,7 +174,7 @@ export function LogForm({
                 <FormLabel>Shift (Optional)</FormLabel>
                 <Select
                   onValueChange={field.onChange}
-                  defaultValue={field.value}
+                  value={field.value}
                 >
                   <FormControl>
                     <SelectTrigger>
@@ -189,7 +204,7 @@ export function LogForm({
           render={({ field }) => (
             <FormItem>
               <FormLabel>Status</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value}>
+              <Select onValueChange={field.onChange} value={field.value}>
                 <FormControl>
                   <SelectTrigger>
                     <SelectValue placeholder="Select status" />
@@ -198,7 +213,10 @@ export function LogForm({
                 <SelectContent>
                   {statusOptions.map((status) => (
                     <SelectItem key={status} value={status}>
-                      {status}
+                      <div className="flex items-center gap-2">
+                        <div className={`h-2 w-2 rounded-full ${statusColors[status as keyof typeof statusColors]}`} />
+                        {status}
+                      </div>
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -211,11 +229,9 @@ export function LogForm({
           )}
         />
 
-        <div className="flex justify-end gap-4">
-          <Button type="submit" disabled={isLoading}>
-            {isLoading ? "Saving..." : "Save Log"}
-          </Button>
-        </div>
+        <Button type="submit" disabled={isLoading} className="w-full">
+          {isLoading ? "Saving..." : "Save Log"}
+        </Button>
       </form>
     </Form>
   )
