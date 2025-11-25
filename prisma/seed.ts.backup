@@ -1,0 +1,215 @@
+import 'dotenv/config'
+import { PrismaClient, Prisma } from '@prisma/client'
+import { PrismaPg } from '@prisma/adapter-pg'
+import pg from 'pg'
+
+const { Pool } = pg
+
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+})
+
+const adapter = new PrismaPg(pool)
+
+const prisma = new PrismaClient({
+  adapter,
+  log: ['query', 'error', 'warn'],
+})
+
+async function main() {
+  console.log('🌱 Starting minimal database seed (only existing tables)...')
+
+  // Clean existing data
+  console.log('🧹 Clearing existing data...')
+  await prisma.locationCheckIn.deleteMany()
+  await prisma.log.deleteMany()
+  await prisma.dutySession.deleteMany()
+  await prisma.shift.deleteMany()
+  await prisma.location.deleteMany()
+  await prisma.user.deleteMany()
+  console.log('✅ Database cleared')
+
+  // Create Users
+  console.log('Creating users...')
+
+  const userData = [
+    // Super Admins (1)
+    { clerkId: 'clerk_superadmin_001', email: 'mail@amosdesigns.net', firstName: 'Jerome', lastName: 'Amos', role: 'SUPER_ADMIN' },
+
+    // Admins (3)
+    { clerkId: 'clerk_admin_001', email: 'admin1@toi.gov', firstName: 'Sarah', lastName: 'Johnson', role: 'ADMIN' },
+    { clerkId: 'clerk_admin_002', email: 'admin2@toi.gov', firstName: 'Michael', lastName: 'Chen', role: 'ADMIN' },
+    { clerkId: 'clerk_admin_003', email: 'admin3@toi.gov', firstName: 'Lisa', lastName: 'Rodriguez', role: 'ADMIN' },
+
+    // Supervisors (4)
+    { clerkId: 'clerk_supervisor_001', email: 'supervisor1@toi.gov', firstName: 'David', lastName: 'Martinez', role: 'SUPERVISOR' },
+    { clerkId: 'clerk_supervisor_002', email: 'supervisor2@toi.gov', firstName: 'Jennifer', lastName: 'Thompson', role: 'SUPERVISOR' },
+    { clerkId: 'clerk_supervisor_003', email: 'supervisor3@toi.gov', firstName: 'Robert', lastName: 'Anderson', role: 'SUPERVISOR' },
+    { clerkId: 'clerk_supervisor_004', email: 'supervisor4@toi.gov', firstName: 'Emily', lastName: 'White', role: 'SUPERVISOR' },
+
+    // Guards (14)
+    { clerkId: 'clerk_guard_001', email: 'guard1@toi.gov', firstName: 'James', lastName: 'Wilson', role: 'GUARD' },
+    { clerkId: 'clerk_guard_002', email: 'guard2@toi.gov', firstName: 'Maria', lastName: 'Garcia', role: 'GUARD' },
+    { clerkId: 'clerk_guard_003', email: 'guard3@toi.gov', firstName: 'Thomas', lastName: 'Brown', role: 'GUARD' },
+    { clerkId: 'clerk_guard_004', email: 'guard4@toi.gov', firstName: 'Patricia', lastName: 'Davis', role: 'GUARD' },
+    { clerkId: 'clerk_guard_005', email: 'guard5@toi.gov', firstName: 'Christopher', lastName: 'Miller', role: 'GUARD' },
+    { clerkId: 'clerk_guard_006', email: 'guard6@toi.gov', firstName: 'Linda', lastName: 'Moore', role: 'GUARD' },
+    { clerkId: 'clerk_guard_007', email: 'guard7@toi.gov', firstName: 'Daniel', lastName: 'Taylor', role: 'GUARD' },
+    { clerkId: 'clerk_guard_008', email: 'guard8@toi.gov', firstName: 'Barbara', lastName: 'Jackson', role: 'GUARD' },
+    { clerkId: 'clerk_guard_009', email: 'guard9@toi.gov', firstName: 'Matthew', lastName: 'Lee', role: 'GUARD' },
+    { clerkId: 'clerk_guard_010', email: 'guard10@toi.gov', firstName: 'Susan', lastName: 'Harris', role: 'GUARD' },
+    { clerkId: 'clerk_guard_011', email: 'guard11@toi.gov', firstName: 'Joseph', lastName: 'Clark', role: 'GUARD' },
+    { clerkId: 'clerk_guard_012', email: 'guard12@toi.gov', firstName: 'Nancy', lastName: 'Lewis', role: 'GUARD' },
+    { clerkId: 'clerk_guard_013', email: 'guard13@toi.gov', firstName: 'Anthony', lastName: 'Walker', role: 'GUARD' },
+    { clerkId: 'clerk_guard_014', email: 'guard14@toi.gov', firstName: 'Karen', lastName: 'Hall', role: 'GUARD' },
+  ]
+
+  const users: Record<string, any> = {}
+
+  for (const user of userData) {
+    const created = await prisma.user.create({ data: user })
+    // Store with a simple key like 'superAdmin', 'admin1', 'supervisor1', 'guard1', etc.
+    const key = user.role === 'SUPER_ADMIN' ? 'superAdmin' :
+                user.role === 'ADMIN' ? `admin${user.email.match(/admin(\d+)/)?.[1]}` :
+                user.role === 'SUPERVISOR' ? `supervisor${user.email.match(/supervisor(\d+)/)?.[1]}` :
+                `guard${user.email.match(/guard(\d+)/)?.[1]}`
+    users[key] = created
+  }
+
+  console.log('✅ Created 22 users')
+
+  // Create Locations
+  console.log('Creating locations...')
+
+  const locationNames = [
+    { name: 'Atlantique Marina', code: 'ATLANTIQUE', maxCapacity: 4 },
+    { name: 'Bay Shore Marina', code: 'BAYSHORE', maxCapacity: 3 },
+    { name: "Brown's River East Side", code: 'BROWNRIVEREAST', maxCapacity: 3 },
+    { name: "Brown's River West Side", code: 'BROWNRIVERWEST', maxCapacity: 3 },
+    { name: 'East Islip Marina', code: 'EASTISLIP', maxCapacity: 4 },
+    { name: 'Great River Ramp', code: 'GREATRIVER', maxCapacity: 2 },
+    { name: 'Homan Creek Dock', code: 'HOMANCREEK', maxCapacity: 2 },
+    { name: 'Maple Avenue Dock', code: 'MAPLEAVENUE', maxCapacity: 2 },
+    { name: 'Maple Street Dock', code: 'MAPLESTREET', maxCapacity: 2 },
+    { name: 'Ocean Avenue Marina', code: 'OCEANAVENUE', maxCapacity: 3 },
+    { name: "Port O'Call Marina", code: 'PORTOCALL', maxCapacity: 3 },
+    { name: 'Raymond Street Dock', code: 'RAYMONDSTREET', maxCapacity: 2 },
+    { name: 'West Avenue Dock', code: 'WESTAVENUE', maxCapacity: 2 },
+    { name: 'West Islip Marina', code: 'WESTISLIP', maxCapacity: 4 },
+  ]
+
+  const locations = []
+  for (const loc of locationNames) {
+    const location = await prisma.location.create({
+      data: {
+        name: loc.name,
+        description: `${loc.code} - Marina facility`,
+        address: `${loc.name}, Town of Islip, NY`,
+        isActive: true,
+        maxCapacity: loc.maxCapacity,
+      },
+    })
+    locations.push(location)
+  }
+
+  console.log('✅ Created 14 locations')
+
+  // Create Duty Sessions
+  console.log('Creating duty sessions...')
+  const now = new Date()
+
+  // Active duty sessions (guards on duty at various locations)
+  await prisma.dutySession.create({
+    data: {
+      userId: users.guard1.id,
+      locationId: locations[0].id, // Atlantique Marina
+      clockInTime: new Date(now.getTime() - 4 * 60 * 60 * 1000),
+      clockOutTime: null,
+    },
+  })
+
+  await prisma.dutySession.create({
+    data: {
+      userId: users.guard3.id,
+      locationId: locations[1].id, // Bay Shore Marina
+      clockInTime: new Date(now.getTime() - 3 * 60 * 60 * 1000),
+      clockOutTime: null,
+    },
+  })
+
+  await prisma.dutySession.create({
+    data: {
+      userId: users.guard5.id,
+      locationId: locations[4].id, // East Islip Marina
+      clockInTime: new Date(now.getTime() - 5 * 60 * 60 * 1000),
+      clockOutTime: null,
+    },
+  })
+
+  await prisma.dutySession.create({
+    data: {
+      userId: users.guard7.id,
+      locationId: locations[13].id, // West Islip Marina
+      clockInTime: new Date(now.getTime() - 2.5 * 60 * 60 * 1000),
+      clockOutTime: null,
+    },
+  })
+
+  const supervisorDuty = await prisma.dutySession.create({
+    data: {
+      userId: users.supervisor1.id,
+      locationId: null,
+      clockInTime: new Date(now.getTime() - 2 * 60 * 60 * 1000),
+      clockOutTime: null,
+    },
+  })
+
+  console.log('✅ Created 5 duty sessions')
+
+  // Create Location Check-ins
+  console.log('Creating location check-ins...')
+  await prisma.locationCheckIn.create({
+    data: {
+      dutySessionId: supervisorDuty.id,
+      locationId: locations[0].id,
+      userId: users.supervisor1.id,
+      notes: 'All systems operational.',
+    },
+  })
+
+  await prisma.locationCheckIn.create({
+    data: {
+      dutySessionId: supervisorDuty.id,
+      locationId: locations[1].id,
+      userId: users.supervisor1.id,
+      notes: 'Checked security cameras and gate locks. Everything secure.',
+    },
+  })
+
+  console.log('✅ Created 2 location check-ins')
+
+  // Create Logs
+  console.log('Creating logs...')
+
+  const logEntries: Prisma.LogUncheckedCreateInput[] = [
+
+  for (const entry of logEntries) {
+    await prisma.log.create({
+      data: entry,
+    })
+  }
+
+  console.log(`✅ Created ${logEntries.length} diverse log entries`)
+  console.log('\n🎉 Seed completed successfully!')
+  console.log('Created: 4 users, 14 locations, 2 duty sessions, 1 check-in, ' + logEntries.length + ' logs')
+}
+
+main()
+  .then(async () => {
+    await prisma.$disconnect()
+  })
+  .catch(async (e) => {
+    console.error('Error seeding database:', e)
+    await prisma.$disconnect()
+    process.exit(1)
+  })

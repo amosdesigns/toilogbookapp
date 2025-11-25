@@ -3,10 +3,9 @@
 import { useState, useEffect } from 'react'
 import { useUser } from '@clerk/nextjs'
 import { useRouter } from 'next/navigation'
-import { addMonths, startOfMonth } from 'date-fns'
 import { Plus, Calendar, Repeat, Lock } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import {
   Select,
   SelectContent,
@@ -20,35 +19,11 @@ import { MonthlyCalendar } from '@/components/shift-calendar/monthly-calendar'
 import { ShiftFormDialog } from '@/components/shift-calendar/shift-form-dialog'
 import { RecurringPatternDialog } from '@/components/shift-calendar/recurring-pattern-dialog'
 import { toast } from 'sonner'
-
-type Location = {
-  id: string
-  name: string
-  maxCapacity: number | null
-}
-
-type User = {
-  id: string
-  firstName: string
-  lastName: string
-  email: string
-  role: string
-}
-
-type ShiftAssignment = {
-  id: string
-  role: string | null
-  user: User
-}
-
-type Shift = {
-  id: string
-  name: string
-  startTime: string
-  endTime: string
-  location: Location
-  assignments: ShiftAssignment[]
-}
+import { getCurrentUser, getUsers } from '@/lib/actions/user-actions'
+import { getActiveLocations } from '@/lib/actions/location-actions'
+import { getShifts } from '@/lib/actions/shift-actions'
+import { getErrorMessage, type CatchError } from '@/lib/utils/error-handler'
+import type { Location, User, Shift } from '@/lib/types'
 
 export default function ShiftsPage() {
   const { user: clerkUser, isLoaded } = useUser()
@@ -61,7 +36,6 @@ export default function ShiftsPage() {
   const [shifts, setShifts] = useState<Shift[]>([])
   const [locations, setLocations] = useState<Location[]>([])
   const [users, setUsers] = useState<User[]>([])
-  const [currentUser, setCurrentUser] = useState<User | null>(null)
 
   const [isShiftDialogOpen, setIsShiftDialogOpen] = useState(false)
   const [isRecurringDialogOpen, setIsRecurringDialogOpen] = useState(false)
@@ -82,11 +56,9 @@ export default function ShiftsPage() {
   const checkAccess = async () => {
     try {
       // Fetch current user from database to check role
-      const response = await fetch('/api/users/me')
-      if (response.ok) {
-        const data = await response.json()
-        const user = data.data
-        setCurrentUser(user)
+      const result = await getCurrentUser()
+      if (result.ok && result.data) {
+        const user = result.data
 
         // Only Supervisor, Admin, and Super Admin can access
         const allowedRoles = ['SUPERVISOR', 'ADMIN', 'SUPER_ADMIN']
@@ -96,9 +68,13 @@ export default function ShiftsPage() {
           toast.error('You do not have permission to access this page')
           router.push('/dashboard')
         }
+      } else {
+        toast.error(result.message || 'Failed to load user data')
+        router.push('/dashboard')
       }
-    } catch (error) {
+    } catch (error: CatchError) {
       console.error('Error checking access:', error)
+      toast.error(getErrorMessage(error))
       router.push('/dashboard')
     }
   }
@@ -112,17 +88,19 @@ export default function ShiftsPage() {
     setIsLoading(true)
     try {
       // Fetch locations
-      const locationsRes = await fetch('/api/locations')
-      if (locationsRes.ok) {
-        const locationsData = await locationsRes.json()
-        setLocations(locationsData.data || [])
+      const locationsResult = await getActiveLocations()
+      if (locationsResult.ok && locationsResult.data) {
+        setLocations(locationsResult.data)
+      } else {
+        toast.error(locationsResult.message || 'Failed to load locations')
       }
 
       // Fetch users
-      const usersRes = await fetch('/api/users')
-      if (usersRes.ok) {
-        const usersData = await usersRes.json()
-        setUsers(usersData.data || [])
+      const usersResult = await getUsers()
+      if (usersResult.ok && usersResult.data) {
+        setUsers(usersResult.data)
+      } else {
+        toast.error(usersResult.message || 'Failed to load users')
       }
 
       // Fetch shifts
@@ -132,23 +110,20 @@ export default function ShiftsPage() {
       endDate.setMonth(endDate.getMonth() + 1)
       endDate.setDate(0) // Last day of month
 
-      const params = new URLSearchParams({
+      const shiftsResult = await getShifts({
         startDate: startDate.toISOString(),
         endDate: endDate.toISOString(),
+        locationId: selectedLocation && selectedLocation !== 'all' ? selectedLocation : undefined,
       })
 
-      if (selectedLocation && selectedLocation !== 'all') {
-        params.append('locationId', selectedLocation)
+      if (shiftsResult.ok && shiftsResult.data) {
+        setShifts(shiftsResult.data)
+      } else {
+        toast.error(shiftsResult.message || 'Failed to load shifts')
       }
-
-      const shiftsRes = await fetch(`/api/shifts?${params}`)
-      if (shiftsRes.ok) {
-        const shiftsData = await shiftsRes.json()
-        setShifts(shiftsData.data || [])
-      }
-    } catch (error) {
+    } catch (error: CatchError) {
       console.error('Error fetching data:', error)
-      toast.error('Failed to load data')
+      toast.error(getErrorMessage(error))
     } finally {
       setIsLoading(false)
     }

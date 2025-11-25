@@ -8,6 +8,18 @@ Town of Islip Marina Guard Logbook - A comprehensive security management system 
 - **Public Frontend** (mobile-first): Guards in the field (`/(public)`)
 - **Admin Backend** (desktop-focused): Supervisors/Admins/Super Admins (`/(admin)`)
 
+## Technical Requirements
+
+- **Node.js**: 22.12+ (required for Prisma 7)
+- **Next.js**: 16.0.3
+- **Prisma**: 7.0.0
+- **Database**: PostgreSQL
+
+**Important**: This project uses Prisma 7 which requires Node.js 22.12+. If using nvm:
+```bash
+nvm use 22  # Switch to Node 22
+```
+
 ## Common Commands
 
 ### Development
@@ -20,18 +32,30 @@ npm run lint           # Run ESLint
 
 ### Database Operations
 ```bash
-npx prisma studio             # Open database GUI (port 5555)
+# Prisma Studio - GUI database browser
+# Note: Prisma 7 requires passing --url flag explicitly
+npx prisma studio --url "postgresql://postgres.qnhcymavgkchvymkkktr:afzVUTcB*y9@C29@aws-1-us-east-1.pooler.supabase.com:6543/postgres?pgbouncer=true"
+
+# With nvm (recommended for Node 22):
+nvm use 22 && npx prisma studio --url "postgresql://postgres.qnhcymavgkchvymkkktr:afzVUTcB*y9@C29@aws-1-us-east-1.pooler.supabase.com:6543/postgres?pgbouncer=true"
+
+# Other Prisma commands
 npx prisma migrate dev        # Create and apply migrations
 npx prisma generate           # Generate Prisma client (run after schema changes)
 npx prisma db push            # Push schema changes without migration (dev only)
-npx prisma db seed            # Seed database (if seed script exists)
+npx prisma db seed            # Seed database with 22 test users
 ```
+
+### Prisma 7 Configuration
+Prisma 7 uses a separate configuration file for datasource connection:
+- **Schema**: `prisma/schema.prisma` (defines models and generator)
+- **Config**: `prisma/prisma.config.ts` (defines datasource connection URL)
 
 ## Architecture Overview
 
 ### **CRITICAL: Server Actions vs API Routes**
 
-⚠️ **This application uses Next.js 15/16 Server Actions for ALL database operations. DO NOT create API routes for database interactions.**
+⚠️ **This application uses Next.js 16 Server Actions for ALL database operations. DO NOT create API routes for database interactions.**
 
 **Always use Server Actions for:**
 - Database queries (read operations)
@@ -106,8 +130,18 @@ export async function myAction(data: any): Promise<Result<MyReturnType>> {
 
 **File Organization:**
 - Place all Server Actions in `lib/actions/`
-- One file per resource (e.g., `logs.ts`, `users.ts`, `shifts.ts`)
+- One file per resource (e.g., `log-actions.ts`, `user-actions.ts`, `shift-actions.ts`)
 - Export individual action functions
+
+**Existing Server Actions:**
+- `duty-session-actions.ts` - Duty session CRUD operations
+- `guards-actions.ts` - Guards on duty tracking
+- `incident-actions.ts` - Incident review operations
+- `location-actions.ts` - Location CRUD operations
+- `log-actions.ts` - Log CRUD operations
+- `shift-actions.ts` - Shift and recurring pattern management
+- `user-actions.ts` - User authentication and data retrieval
+- `safety-checklist-actions.ts` - Safety checklist operations
 
 **Client Usage with Result<T>:**
 ```typescript
@@ -352,12 +386,17 @@ The supervisor dashboard (`/admin/dashboard`) includes comprehensive management 
 
 ## Seed Data
 
-Run `npm run db:seed` to populate database with test data:
-- 6 Users (Super Admin, Admin, Supervisor, 3 Guards)
-- 14 Marina Locations (accurate Town of Islip locations)
-- Active duty sessions (3 guards on duty, 1 supervisor roaming)
-- Sample incidents (unreviewed and reviewed)
-- Various log types (patrol, maintenance, visitor check-ins, weather)
+Run `npm run db:seed` to populate database with comprehensive test data:
+- **22 Users** (2 Super Admins, 2 Admins, 4 Supervisors, 14 Guards)
+- **14 Marina Locations** (accurate Town of Islip locations)
+- **Recurring Shift Patterns** for next 30 days with assignments
+- **Active duty sessions** (3 guards on duty at Atlantique Marina, 1 supervisor roaming)
+- **Sample incidents** (unreviewed and reviewed with varying severity levels)
+- **Various log types** (patrol, maintenance, visitor check-ins, weather, incidents)
+- **Assets, Visitors, Equipment, Maintenance Requests, Alerts**
+- **8 Safety Checklist Items** for on-duty checklist
+
+All 22 users have diverse log entries across different locations and time periods to simulate realistic usage patterns.
 
 ## Testing Approach
 
@@ -367,3 +406,4 @@ Run `npm run db:seed` to populate database with test data:
 - Verify mobile layouts in browser responsive mode or on actual devices
 - Test duty workflows: clock in → create logs → clock out cycles
 - Test supervisor features: guards monitoring, incident reviews, location check-ins
+- always

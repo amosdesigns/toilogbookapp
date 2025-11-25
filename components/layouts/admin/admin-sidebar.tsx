@@ -39,30 +39,30 @@ const navItems = [
   },
   {
     title: "Logs",
-    href: "/admin/logs",
+    href: "/dashboard/logs",
     icon: FileText,
   },
   {
     title: "Shifts",
-    href: "/admin/shifts",
+    href: "/dashboard/shifts",
     icon: Calendar,
   },
   {
     title: "Locations",
-    href: "/admin/locations",
+    href: "/dashboard/locations",
     icon: MapPin,
   },
   {
     title: "Users",
-    href: "/admin/users",
+    href: "/dashboard/users",
     icon: Users,
   },
   {
     title: "Settings",
-    href: "/admin/settings",
+    href: "/dashboard/settings",
     icon: Settings,
   },
-]
+];
 
 interface AdminSidebarProps {
   user: {

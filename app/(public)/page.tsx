@@ -12,6 +12,7 @@ import { toast } from "sonner"
 import { getActiveLocations } from "@/lib/actions/location-actions"
 import { getActiveDutySession, clockIn, clockOut } from "@/lib/actions/duty-session-actions"
 import { submitSafetyChecklist } from "@/lib/actions/safety-checklist-actions"
+import { getErrorMessage, type CatchError } from "@/lib/utils/error-handler"
 
 interface DutySession {
   id: string
@@ -53,8 +54,8 @@ export default function HomePage() {
 
         // Fetch locations using server action
         const locationsResult = await getActiveLocations()
-        if (locationsResult.success) {
-          setLocations(locationsResult.locations)
+        if (locationsResult.ok && locationsResult.data) {
+          setLocations(locationsResult.data)
         }
       } catch (error) {
         console.error("Failed to fetch data:", error)
@@ -76,8 +77,8 @@ export default function HomePage() {
       // Step 1: Clock in to create duty session
       const result = await clockIn(clockInData)
 
-      if (!result.success) {
-        throw new Error(result.error || "Failed to clock in")
+      if (!result.ok) {
+        throw new Error(result.message || "Failed to clock in")
       }
 
       // Step 2: If guard with checklist items, submit safety checklist
@@ -110,9 +111,9 @@ export default function HomePage() {
       toast.success("Successfully clocked in!")
       // Reload the page to refresh header status
       window.location.reload()
-    } catch (error: any) {
+    } catch (error: CatchError) {
       console.error('Clock-in error:', error)
-      toast.error(error.message || "Failed to clock in")
+      toast.error(getErrorMessage(error))
       throw error
     } finally {
       setIsLoading(false)
@@ -126,16 +127,16 @@ export default function HomePage() {
       setIsLoading(true)
       const result = await clockOut(dutySession.id)
 
-      if (!result.success) {
-        throw new Error(result.error || "Failed to clock out")
+      if (!result.ok) {
+        throw new Error(result.message || "Failed to clock out")
       }
 
       setDutySession(null)
       toast.success("Successfully signed off duty!")
       // Reload the page to refresh header status
       window.location.reload()
-    } catch (error: any) {
-      toast.error(error.message || "Failed to clock out")
+    } catch (error: CatchError) {
+      toast.error(getErrorMessage(error))
     } finally {
       setIsLoading(false)
     }

@@ -37,8 +37,8 @@ interface IncidentData {
   id: string
   title: string
   description: string
-  severity: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL"
-  incidentTime: Date
+  severity: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL" | null
+  incidentTime: Date | null
   location: {
     name: string
   }
@@ -46,11 +46,11 @@ interface IncidentData {
     firstName: string
     lastName: string
   }
-  peopleInvolved?: string
-  witnesses?: string
-  actionsTaken?: string
-  followUpRequired?: boolean
-  followUpNotes?: string
+  peopleInvolved?: string | null
+  witnesses?: string | null
+  actionsTaken?: string | null
+  followUpRequired?: boolean | null
+  followUpNotes?: string | null
 }
 
 interface IncidentReviewDialogProps {

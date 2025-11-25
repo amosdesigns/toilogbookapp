@@ -2,13 +2,14 @@
 
 import { auth } from "@clerk/nextjs/server"
 import { prisma } from "@/lib/prisma"
+import { to, type Result } from "@/lib/utils/RenderError"
 
-export async function getGuardsOnDuty() {
+export async function getGuardsOnDuty(): Promise<Result<any>> {
   try {
     const { userId } = await auth()
 
     if (!userId) {
-      return { success: false, error: "Unauthorized", guards: [] }
+      return { ok: false, message: "Unauthorized" }
     }
 
     // Get user from database
@@ -17,7 +18,7 @@ export async function getGuardsOnDuty() {
     })
 
     if (!user) {
-      return { success: false, error: "User not found", guards: [] }
+      return { ok: false, message: "User not found" }
     }
 
     // Verify supervisor role
@@ -26,7 +27,7 @@ export async function getGuardsOnDuty() {
       user.role !== "ADMIN" &&
       user.role !== "SUPER_ADMIN"
     ) {
-      return { success: false, error: "Unauthorized", guards: [] }
+      return { ok: false, message: "Unauthorized" }
     }
 
     // Get all active duty sessions
@@ -76,9 +77,9 @@ export async function getGuardsOnDuty() {
       }
     })
 
-    return { success: true, guards }
+    return { ok: true, data: guards }
   } catch (error) {
     console.error("[GET_GUARDS_ON_DUTY]", error)
-    return { success: false, error: "Failed to fetch guards on duty", guards: [] }
+    return to(error)
   }
 }

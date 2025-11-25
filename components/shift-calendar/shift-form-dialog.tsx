@@ -33,6 +33,8 @@ import {
 } from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
 import { toast } from 'sonner'
+import { createShift, updateShift } from '@/lib/actions/shift-actions'
+import { getErrorMessage, type CatchError } from '@/lib/utils/error-handler'
 
 const shiftFormSchema = z.object({
   name: z.string().min(1, 'Name is required'),
@@ -151,30 +153,26 @@ export function ShiftFormDialog({
     setIsLoading(true)
 
     try {
-      const url = shift ? `/api/shifts/${shift.id}` : '/api/shifts'
-      const method = shift ? 'PATCH' : 'POST'
-
-      const response = await fetch(url, {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...data,
-          userAssignments: selectedUsers,
-        }),
-      })
-
-      if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.error || 'Failed to save shift')
+      const shiftData = {
+        ...data,
+        userAssignments: selectedUsers,
       }
 
-      toast.success(shift ? 'Shift updated successfully' : 'Shift created successfully')
+      const result = shift
+        ? await updateShift(shift.id, shiftData)
+        : await createShift(shiftData)
+
+      if (!result.ok) {
+        throw new Error(result.message || 'Failed to save shift')
+      }
+
+      toast.success(result.message || (shift ? 'Shift updated successfully' : 'Shift created successfully'))
       onOpenChange(false)
       form.reset()
       setSelectedUsers([])
       onSuccess?.()
-    } catch (error: any) {
-      toast.error(error.message)
+    } catch (error: CatchError) {
+      toast.error(getErrorMessage(error))
     } finally {
       setIsLoading(false)
     }

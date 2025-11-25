@@ -18,30 +18,7 @@ import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
-
-type ShiftAssignment = {
-  id: string
-  role: string | null
-  user: {
-    id: string
-    firstName: string
-    lastName: string
-    email: string
-    role: string
-  }
-}
-
-type Shift = {
-  id: string
-  name: string
-  startTime: string
-  endTime: string
-  location: {
-    id: string
-    name: string
-  }
-  assignments: ShiftAssignment[]
-}
+import type { Shift } from '@/lib/types'
 
 interface MonthlyCalendarProps {
   shifts: Shift[]
@@ -73,7 +50,12 @@ export function MonthlyCalendar({
   }
 
   const getShiftsForDay = (day: Date) => {
-    return shifts.filter((shift) => isSameDay(parseISO(shift.startTime), day))
+    return shifts.filter((shift) => {
+      const shiftStart = typeof shift.startTime === 'string'
+        ? parseISO(shift.startTime)
+        : new Date(shift.startTime)
+      return isSameDay(shiftStart, day)
+    })
   }
 
   const handlePreviousMonth = () => {
@@ -151,7 +133,12 @@ export function MonthlyCalendar({
                     >
                       <div className="font-medium truncate">{shift.location.name}</div>
                       <div className="text-muted-foreground text-xs">
-                        {format(parseISO(shift.startTime), 'h:mm a')}
+                        {format(
+                          typeof shift.startTime === 'string'
+                            ? parseISO(shift.startTime)
+                            : new Date(shift.startTime),
+                          'h:mm a'
+                        )}
                       </div>
                       <div className="flex flex-wrap gap-0.5 mt-1">
                         {shift.assignments.slice(0, 2).map((assignment) => (

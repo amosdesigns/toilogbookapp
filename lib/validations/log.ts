@@ -22,7 +22,7 @@ export const createLogSchema = z.object({
   description: z.string().min(1, 'Description is required'),
   locationId: z.string().cuid('Invalid location ID'),
   shiftId: z.string().cuid('Invalid shift ID').optional(),
-  status: RecordStatusEnum.default('DRAFT'),
+  status: RecordStatusEnum,
 })
 
 export const updateLogSchema = z.object({

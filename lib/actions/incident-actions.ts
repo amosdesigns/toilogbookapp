@@ -3,13 +3,14 @@
 import { auth } from "@clerk/nextjs/server"
 import { prisma } from "@/lib/prisma"
 import { revalidatePath } from "next/cache"
+import { to, type Result } from "@/lib/utils/RenderError"
 
-export async function reviewIncident(incidentId: string, reviewNotes: string) {
+export async function reviewIncident(incidentId: string, reviewNotes: string): Promise<Result<any>> {
   try {
     const { userId } = await auth()
 
     if (!userId) {
-      return { success: false, error: "Unauthorized" }
+      return { ok: false, message: "Unauthorized" }
     }
 
     // Get user from database
@@ -18,7 +19,7 @@ export async function reviewIncident(incidentId: string, reviewNotes: string) {
     })
 
     if (!user) {
-      return { success: false, error: "User not found" }
+      return { ok: false, message: "User not found" }
     }
 
     // Verify supervisor role
@@ -27,7 +28,7 @@ export async function reviewIncident(incidentId: string, reviewNotes: string) {
       user.role !== "ADMIN" &&
       user.role !== "SUPER_ADMIN"
     ) {
-      return { success: false, error: "Only supervisors can review incidents" }
+      return { ok: false, message: "Only supervisors can review incidents" }
     }
 
     // Update incident with review
@@ -55,9 +56,9 @@ export async function reviewIncident(incidentId: string, reviewNotes: string) {
 
     revalidatePath("/admin/dashboard")
 
-    return { success: true, incident: updatedIncident }
+    return { ok: true, data: updatedIncident }
   } catch (error) {
     console.error("[REVIEW_INCIDENT]", error)
-    return { success: false, error: "Failed to submit review" }
+    return to(error)
   }
 }

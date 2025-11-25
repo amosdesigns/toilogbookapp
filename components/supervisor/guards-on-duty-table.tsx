@@ -25,6 +25,7 @@ import { Label } from "@/components/ui/label"
 import { toast } from "sonner"
 import { sendMessage as sendMessageAction } from "@/lib/actions/message-actions"
 import { supervisorClockOut } from "@/lib/actions/duty-session-actions"
+import { getErrorMessage, type CatchError } from "@/lib/utils/error-handler"
 
 interface GuardOnDuty {
   userId: string
@@ -75,8 +76,8 @@ export function GuardsOnDutyTable({ guards, onRefresh }: GuardsOnDutyTableProps)
       toast.success(`Message sent to ${selectedGuard.userName}`)
       setMessageDialogOpen(false)
       setMessage("")
-    } catch (error: any) {
-      toast.error(error.message || "Failed to send message")
+    } catch (error: CatchError) {
+      toast.error(getErrorMessage(error))
     } finally {
       setIsSending(false)
     }
@@ -96,8 +97,8 @@ export function GuardsOnDutyTable({ guards, onRefresh }: GuardsOnDutyTableProps)
       toast.success(`Duty session ended for ${selectedGuard.userName}`)
       setEditDialogOpen(false)
       onRefresh()
-    } catch (error: any) {
-      toast.error(error.message || "Failed to end duty session")
+    } catch (error: CatchError) {
+      toast.error(getErrorMessage(error))
     } finally {
       setIsSending(false)
     }

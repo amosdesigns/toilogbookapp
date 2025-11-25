@@ -21,6 +21,7 @@ import {
   type SafetyChecklistItem,
   type ChecklistItemData,
 } from "@/lib/actions/safety-checklist-actions"
+import { getErrorMessage, type CatchError } from "@/lib/utils/error-handler"
 
 interface SafetyChecklistDialogProps {
   open: boolean
@@ -120,8 +121,8 @@ export function SafetyChecklistDialog({
 
       toast.success("Safety checklist completed successfully")
       onComplete()
-    } catch (error: any) {
-      toast.error(error.message || "Failed to submit checklist")
+    } catch (error: CatchError) {
+      toast.error(getErrorMessage(error))
     } finally {
       setIsLoading(false)
     }

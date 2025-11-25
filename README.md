@@ -71,11 +71,12 @@ The application is built with a **dual-interface architecture** optimized for di
 
 ## Tech Stack
 
-- **Framework**: Next.js 16 with App Router
+- **Runtime**: Node.js 22.12+ (required for Prisma 7)
+- **Framework**: Next.js 16.0.3 with App Router
 - **Language**: TypeScript
 - **Styling**: Tailwind CSS v4, shadcn/ui (Radix UI)
 - **Database**: PostgreSQL (via Supabase)
-- **ORM**: Prisma
+- **ORM**: Prisma 7.0.0
 - **Authentication**: Clerk
 - **Storage**: Supabase Storage (video uploads)
 - **Validation**: Zod
@@ -97,11 +98,15 @@ This application uses **Server Actions** instead of API routes for internal oper
 - ✅ Automatic error handling and loading states
 
 **Available Server Actions:**
-- **Duty Sessions**: `clockIn()`, `clockOut()`, `getCurrentDutySession()`
-- **Guards Management**: `getGuardsOnDuty()`, `forceClockOut()`
-- **Incidents**: `getUnreviewedIncidents()`, `reviewIncident()`, `getIncidentsByStatus()`
-- **Location Check-ins**: `checkInToLocation()`, `getLocationCheckIns()`, `getMyRecentCheckIns()`
-- **Notifications**: `getNotifications()`, `dismissNotification()`
+- **Duty Sessions**: `clockIn()`, `clockOut()`, `getActiveDutySession()`
+- **Guards Management**: `getGuardsOnDuty()`
+- **Incidents**: `getIncidents()`, `reviewIncident()`
+- **Locations**: `getActiveLocations()`, `getAllLocations()`
+- **Logs**: `getLogsByLocation()`, `getIncidents()`
+- **Shifts**: `getShifts()`, `createShift()`, `updateShift()`, `deleteShift()`
+- **Recurring Patterns**: `getRecurringPatterns()`, `createRecurringPattern()`, `updateRecurringPattern()`, `deleteRecurringPattern()`
+- **Users**: `getCurrentUser()`, `getUsers()`
+- **Safety Checklists**: `submitSafetyChecklist()`, `getSafetyChecklistItems()`
 
 **📖 Documentation**: See [SERVER_ACTIONS.md](./SERVER_ACTIONS.md) for detailed documentation, usage examples, and architecture decisions.
 
@@ -124,14 +129,7 @@ toi_project/
 │   │   ├── users/         # User management
 │   │   ├── settings/      # App settings
 │   │   └── layout.tsx     # Admin layout with sidebar
-│   ├── actions/           # ✨ Server Actions (Next.js 16 best practice)
-│   │   ├── duty-sessions.ts      # Clock in/out operations
-│   │   ├── guards-on-duty.ts     # Monitor active guards
-│   │   ├── incidents.ts          # Incident review workflow
-│   │   ├── location-checkins.ts  # Supervisor location tracking
-│   │   ├── notifications.ts      # System notifications
-│   │   └── index.ts              # Centralized exports
-│   ├── api/               # API Routes (deprecated - being phased out)
+│   ├── api/               # API Routes (for webhooks only, not database ops)
 │   ├── sign-in/           # Authentication pages
 │   ├── sign-up/
 │   ├── layout.tsx         # Root layout with Clerk
@@ -147,15 +145,27 @@ toi_project/
 │   ├── video-display.tsx  # Video display component
 │   └── ui/                # shadcn/ui components
 ├── lib/
+│   ├── actions/           # ✨ Server Actions (Next.js 16 best practice)
+│   │   ├── duty-session-actions.ts  # Clock in/out operations
+│   │   ├── guards-actions.ts        # Monitor active guards
+│   │   ├── incident-actions.ts      # Incident review workflow
+│   │   ├── location-actions.ts      # Location CRUD operations
+│   │   ├── log-actions.ts           # Log operations
+│   │   ├── shift-actions.ts         # Shift and recurring pattern management
+│   │   ├── user-actions.ts          # User authentication and data retrieval
+│   │   └── safety-checklist-actions.ts # Safety checklist operations
 │   ├── hooks/             # Custom React hooks
 │   ├── utils/             # Utility functions
-│   │   └── auth.ts        # Authorization utilities
+│   │   ├── auth.ts        # Authorization utilities
+│   │   └── RenderError.ts # Result<T> type and error helpers
 │   ├── validations/       # Zod validation schemas
 │   ├── supabase.ts        # Supabase client (video storage)
 │   └── prisma.ts          # Prisma client instance
 ├── prisma/
+│   ├── prisma.config.ts   # Prisma 7 datasource configuration
 │   ├── schema.prisma      # Database schema
-│   └── migrations/        # Database migrations
+│   ├── migrations/        # Database migrations
+│   └── seed.ts            # Seed script (22 test users)
 ├── types/                 # TypeScript type definitions
 ├── proxy.ts               # Clerk authentication middleware
 ├── SERVER_ACTIONS.md      # 📖 Server Actions documentation
@@ -167,9 +177,11 @@ toi_project/
 
 ### Prerequisites
 
-- Node.js 18+ installed
+- **Node.js 22.12+** (required for Prisma 7)
 - A Supabase account and project
 - A Clerk account and application
+
+**Note**: If using nvm, run `nvm use 22` to switch to Node 22.
 
 ### Installation
 
@@ -338,9 +350,12 @@ npm run lint         # Run ESLint
    npm run db:seed
    ```
    This creates:
-   - 6 test users (Super Admin, Admin, Supervisor, 3 Guards)
-   - 14 marina locations
-   - Sample duty sessions and logs
+   - **22 test users** (2 Super Admins, 2 Admins, 4 Supervisors, 14 Guards)
+   - **14 marina locations** (accurate Town of Islip locations)
+   - **Recurring shift patterns** for next 30 days with assignments
+   - **Sample duty sessions and logs** from all users
+   - **Assets, visitors, equipment, maintenance requests, alerts**
+   - **8 safety checklist items**
 
 5. **Start Development**
    ```bash
@@ -355,11 +370,11 @@ All data operations use **Server Actions** (not API routes):
 
 ```typescript
 // Example: Clock in
-import { clockIn } from '@/app/actions'
+import { clockIn } from '@/lib/actions/duty-session-actions'
 
 const result = await clockIn({ locationId: 'clx123...' })
-if (result.success) {
-  console.log('Clocked in!', result.dutySession)
+if (result.ok && result.data) {
+  console.log('Clocked in!', result.data)
 }
 ```
 

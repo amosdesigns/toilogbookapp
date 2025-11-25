@@ -49,12 +49,12 @@ export async function getActiveDutySession(): Promise<Result<any>> {
   }
 }
 
-export async function clockIn(data: { locationId?: string; shiftId?: string }) {
+export async function clockIn(data: { locationId?: string; shiftId?: string }): Promise<Result<any>> {
   try {
     const { userId } = await auth()
 
     if (!userId) {
-      return { success: false, error: "Unauthorized" }
+      return { ok: false, message: "Unauthorized" }
     }
 
     // Get user from database
@@ -63,7 +63,7 @@ export async function clockIn(data: { locationId?: string; shiftId?: string }) {
     })
 
     if (!user) {
-      return { success: false, error: "User not found" }
+      return { ok: false, message: "User not found" }
     }
 
     // Check if user already has an active duty session
@@ -75,12 +75,12 @@ export async function clockIn(data: { locationId?: string; shiftId?: string }) {
     })
 
     if (existingSession) {
-      return { success: false, error: "Already on duty. Please sign off first." }
+      return { ok: false, message: "Already on duty. Please sign off first." }
     }
 
     // Validate locationId for guards
     if (user.role === "GUARD" && !data.locationId) {
-      return { success: false, error: "Guards must select a location" }
+      return { ok: false, message: "Guards must select a location" }
     }
 
     // Supervisors/Admins should have null locationId for roaming duty
@@ -109,19 +109,19 @@ export async function clockIn(data: { locationId?: string; shiftId?: string }) {
     revalidatePath("/")
     revalidatePath("/admin/dashboard")
 
-    return { success: true, dutySession }
+    return { ok: true, data: dutySession }
   } catch (error) {
     console.error("[CLOCK_IN]", error)
-    return { success: false, error: "Failed to clock in" }
+    return to(error)
   }
 }
 
-export async function clockOut(dutySessionId: string, notes?: string) {
+export async function clockOut(dutySessionId: string, notes?: string): Promise<Result<any>> {
   try {
     const { userId } = await auth()
 
     if (!userId) {
-      return { success: false, error: "Unauthorized" }
+      return { ok: false, message: "Unauthorized" }
     }
 
     // Get user from database
@@ -130,7 +130,7 @@ export async function clockOut(dutySessionId: string, notes?: string) {
     })
 
     if (!user) {
-      return { success: false, error: "User not found" }
+      return { ok: false, message: "User not found" }
     }
 
     // Get duty session
@@ -139,12 +139,12 @@ export async function clockOut(dutySessionId: string, notes?: string) {
     })
 
     if (!dutySession) {
-      return { success: false, error: "Duty session not found" }
+      return { ok: false, message: "Duty session not found" }
     }
 
     // Verify ownership
     if (dutySession.userId !== user.id) {
-      return { success: false, error: "Unauthorized" }
+      return { ok: false, message: "Unauthorized" }
     }
 
     // Update duty session
@@ -163,10 +163,10 @@ export async function clockOut(dutySessionId: string, notes?: string) {
     revalidatePath("/")
     revalidatePath("/admin/dashboard")
 
-    return { success: true, dutySession: updatedSession }
+    return { ok: true, data: updatedSession }
   } catch (error) {
     console.error("[CLOCK_OUT]", error)
-    return { success: false, error: "Failed to clock out" }
+    return to(error)
   }
 }
 
@@ -227,12 +227,12 @@ export async function createLocationCheckIn(
   dutySessionId: string,
   locationId: string,
   notes?: string
-) {
+): Promise<Result<any>> {
   try {
     const { userId } = await auth()
 
     if (!userId) {
-      return { success: false, error: "Unauthorized" }
+      return { ok: false, message: "Unauthorized" }
     }
 
     // Get user from database
@@ -241,7 +241,7 @@ export async function createLocationCheckIn(
     })
 
     if (!user) {
-      return { success: false, error: "User not found" }
+      return { ok: false, message: "User not found" }
     }
 
     // Create location check-in
@@ -259,9 +259,9 @@ export async function createLocationCheckIn(
 
     revalidatePath("/admin/dashboard")
 
-    return { success: true, checkIn }
+    return { ok: true, data: checkIn }
   } catch (error) {
     console.error("[CREATE_LOCATION_CHECK_IN]", error)
-    return { success: false, error: "Failed to record check-in" }
+    return to(error)
   }
 }

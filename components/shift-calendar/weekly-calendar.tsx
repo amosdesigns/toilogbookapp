@@ -7,30 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
-
-type ShiftAssignment = {
-  id: string
-  role: string | null
-  user: {
-    id: string
-    firstName: string
-    lastName: string
-    email: string
-    role: string
-  }
-}
-
-type Shift = {
-  id: string
-  name: string
-  startTime: string
-  endTime: string
-  location: {
-    id: string
-    name: string
-  }
-  assignments: ShiftAssignment[]
-}
+import type { Shift } from '@/lib/types'
 
 interface WeeklyCalendarProps {
   shifts: Shift[]
@@ -53,7 +30,9 @@ export function WeeklyCalendar({
 
   const getShiftsForCell = (day: Date, hour: number) => {
     return shifts.filter((shift) => {
-      const shiftStart = parseISO(shift.startTime)
+      const shiftStart = typeof shift.startTime === 'string'
+        ? parseISO(shift.startTime)
+        : new Date(shift.startTime)
       const shiftHour = shiftStart.getHours()
       return isSameDay(shiftStart, day) && shiftHour === hour
     })
@@ -139,8 +118,18 @@ export function WeeklyCalendar({
                               {shift.location.name}
                             </div>
                             <div className="text-xs text-muted-foreground">
-                              {format(parseISO(shift.startTime), 'h:mm a')} -{' '}
-                              {format(parseISO(shift.endTime), 'h:mm a')}
+                              {format(
+                                typeof shift.startTime === 'string'
+                                  ? parseISO(shift.startTime)
+                                  : new Date(shift.startTime),
+                                'h:mm a'
+                              )} -{' '}
+                              {format(
+                                typeof shift.endTime === 'string'
+                                  ? parseISO(shift.endTime)
+                                  : new Date(shift.endTime),
+                                'h:mm a'
+                              )}
                             </div>
                             <div className="flex flex-wrap gap-1 mt-1">
                               {shift.assignments.map((assignment) => (

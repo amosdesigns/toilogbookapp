@@ -2,6 +2,7 @@
 
 import { auth } from "@clerk/nextjs/server"
 import { prisma } from "@/lib/prisma"
+import { to, type Result } from "@/lib/utils/RenderError"
 
 export async function getLogsByLocation(locationId: string, limit: number = 20) {
   try {
@@ -41,12 +42,12 @@ export async function getLogsByLocation(locationId: string, limit: number = 20) 
   }
 }
 
-export async function getIncidents() {
+export async function getIncidents(): Promise<Result<any>> {
   try {
     const { userId } = await auth()
 
     if (!userId) {
-      return { success: false, error: "Unauthorized", logs: [] }
+      return { ok: false, message: "Unauthorized" }
     }
 
     const logs = await prisma.log.findMany({
@@ -71,9 +72,9 @@ export async function getIncidents() {
       },
     })
 
-    return { success: true, logs }
+    return { ok: true, data: logs }
   } catch (error) {
     console.error("[GET_INCIDENTS]", error)
-    return { success: false, error: "Failed to fetch incidents", logs: [] }
+    return to(error)
   }
 }

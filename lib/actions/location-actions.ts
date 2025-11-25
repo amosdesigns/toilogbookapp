@@ -1,8 +1,9 @@
 "use server"
 
 import { prisma } from "@/lib/prisma"
+import { to, type Result } from "@/lib/utils/RenderError"
 
-export async function getActiveLocations() {
+export async function getActiveLocations(): Promise<Result<any>> {
   try {
     const locations = await prisma.location.findMany({
       where: { isActive: true },
@@ -13,10 +14,10 @@ export async function getActiveLocations() {
       orderBy: { name: "asc" },
     })
 
-    return { success: true, locations }
+    return { ok: true, data: locations }
   } catch (error) {
     console.error("[GET_ACTIVE_LOCATIONS]", error)
-    return { success: false, error: "Failed to fetch locations", locations: [] }
+    return to(error)
   }
 }
 

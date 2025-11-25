@@ -35,6 +35,8 @@ import {
 import { Checkbox } from '@/components/ui/checkbox'
 import { Badge } from '@/components/ui/badge'
 import { toast } from 'sonner'
+import { createRecurringPattern, updateRecurringPattern } from '@/lib/actions/shift-actions'
+import { getErrorMessage, type CatchError } from '@/lib/utils/error-handler'
 
 const recurringPatternSchema = z.object({
   name: z.string().min(1, 'Name is required'),
@@ -147,35 +149,30 @@ export function RecurringPatternDialog({
     setIsLoading(true)
 
     try {
-      const url = pattern ? `/api/shifts/recurring/${pattern.id}` : '/api/shifts/recurring'
-      const method = pattern ? 'PATCH' : 'POST'
+      const patternData = {
+        ...data,
+        daysOfWeek: selectedDays,
+        userAssignments: selectedUsers,
+      }
 
-      const response = await fetch(url, {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...data,
-          daysOfWeek: selectedDays,
-          userAssignments: selectedUsers,
-          generateShifts: !pattern && generateShifts ? { days: generateDays } : undefined,
-        }),
-      })
+      const result = pattern
+        ? await updateRecurringPattern(pattern.id, patternData)
+        : await createRecurringPattern(patternData)
 
-      if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.error || 'Failed to save recurring pattern')
+      if (!result.ok) {
+        throw new Error(result.message || 'Failed to save recurring pattern')
       }
 
       toast.success(
-        pattern ? 'Recurring pattern updated successfully' : 'Recurring pattern created successfully'
+        result.message || (pattern ? 'Recurring pattern updated successfully' : 'Recurring pattern created successfully')
       )
       onOpenChange(false)
       form.reset()
       setSelectedDays([])
       setSelectedUsers([])
       onSuccess?.()
-    } catch (error: any) {
-      toast.error(error.message)
+    } catch (error: CatchError) {
+      toast.error(getErrorMessage(error))
     } finally {
       setIsLoading(false)
     }

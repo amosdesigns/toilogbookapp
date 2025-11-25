@@ -17,58 +17,8 @@ import { getActiveDutySession, clockIn, clockOut, createLocationCheckIn } from "
 import { getGuardsOnDuty } from "@/lib/actions/guards-actions"
 import { getIncidents } from "@/lib/actions/log-actions"
 import { reviewIncident } from "@/lib/actions/incident-actions"
-
-interface DutySession {
-  id: string
-  locationId: string | null
-  clockInTime: Date
-  clockOutTime: Date | null
-  location?: {
-    id: string
-    name: string
-  } | null
-}
-
-interface Location {
-  id: string
-  name: string
-}
-
-interface GuardOnDuty {
-  userId: string
-  userName: string
-  userEmail: string
-  role: string
-  dutySessionId: string
-  locationId: string | null
-  locationName: string | null
-  clockInTime: Date
-  hoursOnDuty: string
-}
-
-interface IncidentReport {
-  id: string
-  title: string
-  description: string
-  severity: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL" | null
-  status: "LIVE" | "UPDATED" | "ARCHIVED" | "DRAFT"
-  incidentTime: Date | null
-  location: {
-    name: string
-  }
-  user: {
-    firstName: string
-    lastName: string
-  }
-  peopleInvolved?: string | null
-  witnesses?: string | null
-  actionsTaken?: string | null
-  followUpRequired?: boolean | null
-  followUpNotes?: string | null
-  reviewedBy?: string | null
-  reviewedAt?: Date | null
-  createdAt: Date
-}
+import { getErrorMessage, type CatchError } from "@/lib/utils/error-handler"
+import type { DutySession, Location, GuardOnDuty, IncidentReport } from "@/lib/types"
 
 export default function AdminDashboardPage() {
   const { user } = useUser()
@@ -98,28 +48,28 @@ export default function AdminDashboardPage() {
 
       // Fetch active duty session using server action
       const dutyResult = await getActiveDutySession()
-      if (dutyResult.success && dutyResult.dutySession) {
-        setDutySession(dutyResult.dutySession)
+      if (dutyResult.ok && dutyResult.data) {
+        setDutySession(dutyResult.data)
       }
 
       // Fetch locations using server action
       const locationsResult = await getActiveLocations()
-      if (locationsResult.success) {
-        setLocations(locationsResult.locations)
+      if (locationsResult.ok && locationsResult.data) {
+        setLocations(locationsResult.data)
       }
 
       // Supervisor-only data
       if (isSupervisor) {
         // Fetch guards on duty using server action
         const guardsResult = await getGuardsOnDuty()
-        if (guardsResult.success) {
-          setGuardsOnDuty(guardsResult.guards)
+        if (guardsResult.ok && guardsResult.data) {
+          setGuardsOnDuty(guardsResult.data)
         }
 
         // Fetch all incidents using server action
         const incidentsResult = await getIncidents()
-        if (incidentsResult.success) {
-          setIncidents(incidentsResult.logs)
+        if (incidentsResult.ok && incidentsResult.data) {
+          setIncidents(incidentsResult.data)
         }
       }
     } catch (error) {
@@ -134,15 +84,15 @@ export default function AdminDashboardPage() {
       setIsLoading(true)
       const result = await clockIn(data)
 
-      if (!result.success) {
-        throw new Error(result.error || "Failed to clock in")
+      if (!result.ok) {
+        throw new Error(result.message || "Failed to clock in")
       }
 
-      setDutySession(result.dutySession!)
+      setDutySession(result.data!)
       toast.success("Successfully clocked in!")
       fetchDashboardData() // Refresh data
-    } catch (error: any) {
-      toast.error(error.message || "Failed to clock in")
+    } catch (error: CatchError) {
+      toast.error(getErrorMessage(error))
       throw error
     } finally {
       setIsLoading(false)
@@ -156,15 +106,15 @@ export default function AdminDashboardPage() {
       setIsLoading(true)
       const result = await clockOut(dutySession.id)
 
-      if (!result.success) {
-        throw new Error(result.error || "Failed to clock out")
+      if (!result.ok) {
+        throw new Error(result.message || "Failed to clock out")
       }
 
       setDutySession(null)
       toast.success("Successfully signed off duty!")
       fetchDashboardData() // Refresh data
-    } catch (error: any) {
-      toast.error(error.message || "Failed to clock out")
+    } catch (error: CatchError) {
+      toast.error(getErrorMessage(error))
     } finally {
       setIsLoading(false)
     }
@@ -181,13 +131,13 @@ export default function AdminDashboardPage() {
         data.notes
       )
 
-      if (!result.success) {
-        throw new Error(result.error || "Failed to record check-in")
+      if (!result.ok) {
+        throw new Error(result.message || "Failed to record check-in")
       }
 
       toast.success("Location check-in recorded!")
-    } catch (error: any) {
-      toast.error(error.message || "Failed to record check-in")
+    } catch (error: CatchError) {
+      toast.error(getErrorMessage(error))
       throw error
     } finally {
       setIsLoading(false)
@@ -199,14 +149,14 @@ export default function AdminDashboardPage() {
       setIsLoading(true)
       const result = await reviewIncident(incidentId, data.reviewNotes)
 
-      if (!result.success) {
-        throw new Error(result.error || "Failed to submit review")
+      if (!result.ok) {
+        throw new Error(result.message || "Failed to submit review")
       }
 
       toast.success("Incident review submitted!")
       fetchDashboardData() // Refresh incidents
-    } catch (error: any) {
-      toast.error(error.message || "Failed to submit review")
+    } catch (error: CatchError) {
+      toast.error(getErrorMessage(error))
       throw error
     } finally {
       setIsLoading(false)
