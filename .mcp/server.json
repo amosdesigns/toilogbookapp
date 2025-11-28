@@ -1,0 +1,122 @@
+{
+  "name": "toilogbookapp",
+  "version": "1.0.0",
+  "description": "Town of Islip Marina Guard Logbook - MCP Server Configuration",
+  "tools": [
+    {
+      "name": "search_schema",
+      "description": "Search Prisma schema for models, fields, and relations",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string",
+            "description": "Search term (model name, field name, or relation)"
+          }
+        },
+        "required": ["query"]
+      }
+    },
+    {
+      "name": "get_server_actions",
+      "description": "List all available server actions by category",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "category": {
+            "type": "string",
+            "description": "Category: user, log, shift, location, duty, incident, guard, safety",
+            "enum": ["user", "log", "shift", "location", "duty", "incident", "guard", "safety", "all"]
+          }
+        }
+      }
+    },
+    {
+      "name": "get_component_structure",
+      "description": "Get component hierarchy and locations",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "description": "Component type: admin, public, form, table, or all",
+            "enum": ["admin", "public", "form", "table", "all"]
+          }
+        }
+      }
+    }
+  ],
+  "resources": [
+    {
+      "uri": "schema://prisma",
+      "name": "Prisma Schema",
+      "description": "Database schema with all models, enums, and relations",
+      "mimeType": "text/plain"
+    },
+    {
+      "uri": "docs://architecture",
+      "name": "Architecture Overview",
+      "description": "Dual-interface architecture (public/admin), server actions pattern, role-based access",
+      "mimeType": "text/markdown"
+    },
+    {
+      "uri": "docs://conventions",
+      "name": "Code Conventions",
+      "description": "TypeScript rules, no any types, server actions pattern, Result<T> type",
+      "mimeType": "text/markdown"
+    }
+  ],
+  "context": {
+    "project": {
+      "name": "Town of Islip Marina Guard Logbook",
+      "type": "Next.js 16 Application",
+      "framework": "Next.js 16.0.5",
+      "language": "TypeScript",
+      "database": "PostgreSQL (Supabase)",
+      "orm": "Prisma 7",
+      "auth": "Clerk"
+    },
+    "architecture": {
+      "pattern": "Dual Interface (Public + Admin)",
+      "publicInterface": "Mobile-first for guards in field (app/(public))",
+      "adminInterface": "Desktop-optimized for supervisors/admins (app/(admin))",
+      "dataLayer": "Server Actions (NO API routes)",
+      "stateManagement": "React Hooks + Server Actions"
+    },
+    "conventions": {
+      "typescript": {
+        "strict": true,
+        "noAnyTypes": true,
+        "explicitReturnTypes": true
+      },
+      "serverActions": {
+        "location": "lib/actions/",
+        "pattern": "One file per resource",
+        "returnType": "Result<T>",
+        "authentication": "Required on all actions",
+        "authorization": "Role-based checks"
+      },
+      "components": {
+        "ui": "shadcn/ui components in components/ui/",
+        "forms": "React Hook Form + Zod validation",
+        "styling": "Tailwind CSS v4"
+      }
+    },
+    "roles": {
+      "SUPER_ADMIN": "Full system access, can unarchive users",
+      "ADMIN": "Manage users, locations, shifts, logs",
+      "SUPERVISOR": "Review incidents, manage guards on duty, roaming duty",
+      "GUARD": "Clock in/out, create logs, view assigned shifts"
+    },
+    "keyFeatures": [
+      "User Management (ADMIN/SUPER_ADMIN only)",
+      "Duty Session Management (clock in/out)",
+      "Location Check-ins (supervisor roaming)",
+      "Log Management (incidents, patrols, maintenance, etc.)",
+      "Shift Scheduling with Calendar",
+      "Incident Review Workflow",
+      "Safety Checklists",
+      "11 Marina Locations"
+    ]
+  }
+}

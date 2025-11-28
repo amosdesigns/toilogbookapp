@@ -118,6 +118,7 @@ model User {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  archivedAt DateTime?
 
   logs                      Log[]
   reviewedLogs              Log[]                     @relation("ReviewedLogs")

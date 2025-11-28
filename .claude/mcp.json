@@ -1,3 +1,4 @@
+
 {
   "mcpServers": {
     "github": {
@@ -29,6 +30,24 @@
       ],
       "env": {
         "VERCEL_API_TOKEN": "${VERCEL_API_TOKEN}"
+      }
+    },
+    "prisma": {
+      "command": "npx",
+      "args": [
+        "prisma",
+        "mcp"
+      ]
+    },
+    "supabase": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@supabase-community/mcp-server-supabase"
+      ],
+      "env": {
+        "SUPABASE_ACCESS_TOKEN": "${SUPABASE_ACCESS_TOKEN}",
+        "SUPABASE_PROJECT_ID": "${SUPABASE_PROJECT_ID}"
       }
     }
   }

@@ -20,9 +20,9 @@ export default async function AdminLayout({
       <div className="flex min-h-screen w-full">
         <AdminSidebar user={user} />
         <SidebarInset>
-          <main className="flex-1 p-6 md:p-8 lg:p-10">
+          <main className="flex-1 p-4 md:p-6 lg:p-6">
             {/* Global Notifications */}
-            <NotificationBanner className="mb-6" />
+            <NotificationBanner className="mb-4" />
 
             {children}
           </main>
