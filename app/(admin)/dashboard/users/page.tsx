@@ -1,9 +1,18 @@
-import React from 'react'
+import { redirect } from "next/navigation"
+import { getCurrentUser } from "@/lib/auth/sync-user"
+import { UserManagementClient } from "./user-management-client"
 
-const page = () => {
-  return (
-    <div>page</div>
-  )
+export default async function UserManagementPage() {
+  const user = await getCurrentUser()
+
+  if (!user) {
+    redirect("/sign-in")
+  }
+
+  // Server-side authorization check
+  if (user.role !== "ADMIN" && user.role !== "SUPER_ADMIN") {
+    redirect("/")
+  }
+
+  return <UserManagementClient userRole={user.role} />
 }
-
-export default page

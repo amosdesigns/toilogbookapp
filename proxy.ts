@@ -1,4 +1,5 @@
 import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server'
+import { NextResponse } from 'next/server'
 
 const isPublicRoute = createRouteMatcher([
   '/sign-in(.*)',
@@ -9,6 +10,16 @@ const isPublicRoute = createRouteMatcher([
 export const proxy = clerkMiddleware(async (auth, request) => {
   if (!isPublicRoute(request)) {
     await auth.protect()
+
+    // Check if user is archived
+    const { sessionClaims } = await auth()
+    const publicMetadata = sessionClaims?.metadata as { archived?: boolean } | undefined
+    if (publicMetadata?.archived === true) {
+      // Redirect archived users to a blocked page or sign out
+      const signOutUrl = new URL('/sign-in', request.url)
+      signOutUrl.searchParams.set('archived', 'true')
+      return NextResponse.redirect(signOutUrl)
+    }
   }
 })
 
