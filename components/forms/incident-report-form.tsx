@@ -1,6 +1,6 @@
 "use client"
 
-import { useForm } from "react-hook-form"
+import { useForm, type Resolver } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { createIncidentReportSchema, type CreateIncidentReportInput, IncidentSeverityEnum, RecordStatusEnum } from "@/lib/validations"
 import { format } from "date-fns"
@@ -52,7 +52,7 @@ export function IncidentReportForm({
   currentLocationId,
 }: IncidentReportFormProps) {
   const form = useForm<CreateIncidentReportInput>({
-    resolver: zodResolver(createIncidentReportSchema),
+    resolver: zodResolver(createIncidentReportSchema) as Resolver<CreateIncidentReportInput>,
     defaultValues: {
       type: "INCIDENT",
       title: defaultValues?.title || "",

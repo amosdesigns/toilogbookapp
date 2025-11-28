@@ -38,7 +38,7 @@ export default function HomePage() {
   const [isLoading, setIsLoading] = useState(false)
   const [isFetching, setIsFetching] = useState(true)
 
-  const userRole = (user?.publicMetadata?.role as string) || "GUARD"
+  const userRole = (user?.publicMetadata?.role as "SUPER_ADMIN" | "ADMIN" | "SUPERVISOR" | "GUARD") || "GUARD"
 
   // Fetch active duty session and locations on mount
   useEffect(() => {
@@ -166,7 +166,7 @@ export default function HomePage() {
       {/* Duty Status Card */}
       <DutyStatusCard
         dutySession={dutySession}
-        userRole={userRole as any}
+        userRole={userRole}
         onClockIn={() => setClockInDialogOpen(true)}
         onClockOut={handleClockOut}
       />
@@ -231,7 +231,7 @@ export default function HomePage() {
         onOpenChange={setClockInDialogOpen}
         onSubmit={handleClockIn}
         locations={locations}
-        userRole={userRole as any}
+        userRole={userRole}
         isLoading={isLoading}
       />
     </div>

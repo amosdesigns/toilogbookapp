@@ -84,7 +84,7 @@ export async function clockIn(data: { locationId?: string; shiftId?: string }): 
     }
 
     // Supervisors/Admins should have null locationId for roaming duty
-    let locationId = data.locationId
+    let locationId: string | null | undefined = data.locationId
     if (
       user.role === "SUPERVISOR" ||
       user.role === "ADMIN" ||

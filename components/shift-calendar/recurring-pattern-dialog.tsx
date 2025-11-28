@@ -112,7 +112,7 @@ export function RecurringPatternDialog({
 
   useEffect(() => {
     if (pattern?.daysOfWeek) {
-      setSelectedDays(JSON.parse(pattern.daysOfWeek))
+      setSelectedDays(JSON.parse(pattern.daysOfWeek) as number[])
     }
     if (pattern?.userAssignments) {
       setSelectedUsers(

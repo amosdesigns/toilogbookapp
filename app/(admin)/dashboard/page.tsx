@@ -18,7 +18,7 @@ import { getGuardsOnDuty } from "@/lib/actions/guards-actions"
 import { getIncidents } from "@/lib/actions/log-actions"
 import { reviewIncident } from "@/lib/actions/incident-actions"
 import { getErrorMessage, type CatchError } from "@/lib/utils/error-handler"
-import type { DutySession, Location, GuardOnDuty, IncidentReport } from "@/lib/types"
+import type { DutySession, Location, GuardOnDuty, IncidentReport, UserRole } from "@/lib/types"
 
 export default function AdminDashboardPage() {
   const { user } = useUser()
@@ -35,7 +35,7 @@ export default function AdminDashboardPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [isFetching, setIsFetching] = useState(true)
 
-  const userRole = (user?.publicMetadata?.role as string) || "GUARD"
+  const userRole = (user?.publicMetadata?.role as UserRole) || "GUARD"
   const isSupervisor = userRole === "SUPERVISOR" || userRole === "ADMIN" || userRole === "SUPER_ADMIN"
 
   useEffect(() => {
@@ -198,7 +198,7 @@ export default function AdminDashboardPage() {
         <div className="grid gap-4 md:grid-cols-2">
           <DutyStatusCard
             dutySession={dutySession}
-            userRole={userRole as any}
+            userRole={userRole}
             onClockIn={() => setClockInDialogOpen(true)}
             onClockOut={handleClockOut}
           />
@@ -311,7 +311,7 @@ export default function AdminDashboardPage() {
         onOpenChange={setClockInDialogOpen}
         onSubmit={handleClockIn}
         locations={locations}
-        userRole={userRole as any}
+        userRole={userRole}
         isLoading={isLoading}
       />
 
