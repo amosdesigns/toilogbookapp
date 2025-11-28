@@ -1,6 +1,6 @@
 "use client"
 
-import { useForm } from "react-hook-form"
+import { useForm, type Resolver } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { createLocationSchema, type CreateLocationInput } from "@/lib/validations"
 import {
@@ -29,7 +29,7 @@ export function LocationForm({
   isLoading = false,
 }: LocationFormProps) {
   const form = useForm<CreateLocationInput>({
-    resolver: zodResolver(createLocationSchema),
+    resolver: zodResolver(createLocationSchema) as Resolver<CreateLocationInput>,
     defaultValues: {
       name: defaultValues?.name || "",
       description: defaultValues?.description || "",

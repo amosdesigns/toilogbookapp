@@ -14,7 +14,10 @@ export const createIncidentReportSchema = createLogSchema.extend({
 
   // Incident-specific required fields
   severity: IncidentSeverityEnum,
-  incidentTime: z.coerce.date(),
+  incidentTime: z.preprocess(
+    (val) => (val instanceof Date ? val : new Date(val as string)),
+    z.date()
+  ),
 
   // Optional incident fields
   peopleInvolved: z.string().optional(),
@@ -35,7 +38,10 @@ export const updateIncidentReportSchema = z.object({
 
   // Incident fields
   severity: IncidentSeverityEnum.optional(),
-  incidentTime: z.coerce.date().optional(),
+  incidentTime: z.preprocess(
+    (val) => (val instanceof Date ? val : new Date(val as string)),
+    z.date()
+  ).optional(),
   peopleInvolved: z.string().optional().nullable(),
   witnesses: z.string().optional().nullable(),
   actionsTaken: z.string().optional().nullable(),
@@ -44,6 +50,14 @@ export const updateIncidentReportSchema = z.object({
   weatherConditions: z.string().max(200).optional().nullable(),
 })
 
-export type CreateIncidentReportInput = z.infer<typeof createIncidentReportSchema>
-export type UpdateIncidentReportInput = z.infer<typeof updateIncidentReportSchema>
+// Manually define types with correct Date type (workaround for Zod v4 preprocess type inference)
+export type CreateIncidentReportInput = Omit<z.infer<typeof createIncidentReportSchema>, 'incidentTime' | 'followUpRequired'> & {
+  incidentTime: Date
+  followUpRequired: boolean
+}
+
+export type UpdateIncidentReportInput = Omit<z.infer<typeof updateIncidentReportSchema>, 'incidentTime'> & {
+  incidentTime?: Date
+}
+
 export type IncidentSeverity = z.infer<typeof IncidentSeverityEnum>

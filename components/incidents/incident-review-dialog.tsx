@@ -118,9 +118,11 @@ export function IncidentReviewDialog({
                 Review and acknowledge this incident report
               </DialogDescription>
             </div>
-            <Badge className={severityColors[incident.severity]}>
-              {incident.severity}
-            </Badge>
+            {incident.severity && (
+              <Badge className={severityColors[incident.severity]}>
+                {incident.severity}
+              </Badge>
+            )}
           </div>
         </DialogHeader>
 
@@ -146,7 +148,9 @@ export function IncidentReviewDialog({
                 <div className="flex items-center gap-2">
                   <Clock className="h-4 w-4 text-muted-foreground" />
                   <span className="text-muted-foreground">Incident Time:</span>
-                  <span className="font-medium">{formatDateTime(incident.incidentTime)}</span>
+                  <span className="font-medium">
+                    {incident.incidentTime ? formatDateTime(incident.incidentTime) : 'Not specified'}
+                  </span>
                 </div>
 
                 <div className="flex items-center gap-2">

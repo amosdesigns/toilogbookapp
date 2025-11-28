@@ -14,5 +14,8 @@ export const updateLocationSchema = z.object({
   isActive: z.boolean().optional(),
 })
 
-export type CreateLocationInput = z.infer<typeof createLocationSchema>
+// Fix type inference for default values in Zod v4
+export type CreateLocationInput = Omit<z.infer<typeof createLocationSchema>, 'isActive'> & {
+  isActive: boolean
+}
 export type UpdateLocationInput = z.infer<typeof updateLocationSchema>

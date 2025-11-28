@@ -270,7 +270,7 @@ export async function deleteShift(shiftId: string): Promise<Result<any>> {
 
     revalidatePath("/admin/dashboard/shifts")
 
-    return { ok: true, message: "Shift deleted successfully" }
+    return { ok: true, data: null, message: "Shift deleted successfully" }
   } catch (error) {
     console.error("[DELETE_SHIFT]", error)
     return to(error)
@@ -553,7 +553,7 @@ export async function deleteRecurringPattern(
 
     revalidatePath("/admin/dashboard/shifts")
 
-    return { ok: true, message: "Recurring pattern deleted successfully" }
+    return { ok: true, data: null, message: "Recurring pattern deleted successfully" }
   } catch (error) {
     console.error("[DELETE_RECURRING_PATTERN]", error)
     return to(error)

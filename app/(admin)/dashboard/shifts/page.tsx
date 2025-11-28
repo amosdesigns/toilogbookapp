@@ -223,7 +223,7 @@ export default function ShiftsPage() {
             </Select>
           </div>
 
-          <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as any)}>
+          <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as 'weekly' | 'monthly')}>
             <TabsList>
               <TabsTrigger value="weekly">
                 <Calendar className="h-4 w-4 mr-2" />

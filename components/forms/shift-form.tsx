@@ -1,6 +1,6 @@
 "use client"
 
-import { useForm } from "react-hook-form"
+import { useForm, type Resolver } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { createShiftSchema, type CreateShiftInput } from "@/lib/validations"
 import { format } from "date-fns"
@@ -47,7 +47,7 @@ export function ShiftForm({
   isLoading = false,
 }: ShiftFormProps) {
   const form = useForm<CreateShiftInput>({
-    resolver: zodResolver(createShiftSchema),
+    resolver: zodResolver(createShiftSchema) as Resolver<CreateShiftInput>,
     defaultValues: {
       name: defaultValues?.name || "",
       startTime: defaultValues?.startTime || new Date(),
