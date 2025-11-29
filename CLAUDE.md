@@ -56,10 +56,10 @@ npm run lint           # Run ESLint
 ```bash
 # Prisma Studio - GUI database browser
 # Note: Prisma 7 requires passing --url flag explicitly
-npx prisma studio --url "postgresql://postgres.qnhcymavgkchvymkkktr:afzVUTcB*y9@C29@aws-1-us-east-1.pooler.supabase.com:6543/postgres?pgbouncer=true"
+npx prisma studio --url "postgresql://postgres.qnhcymavgkchvymkkktr:[databasepasword]@C29@aws-1-us-east-1.pooler.supabase.com:6543/postgres?pgbouncer=true"
 
 # With nvm (recommended for Node 22):
-nvm use 22 && npx prisma studio --url "postgresql://postgres.qnhcymavgkchvymkkktr:afzVUTcB*y9@C29@aws-1-us-east-1.pooler.supabase.com:6543/postgres?pgbouncer=true"
+nvm use 22 && npx prisma studio --url "postgresql://postgres.qnhcymavgkchvymkkktr:[password]@aws-1-us-east-1.pooler.supabase.com:6543/postgres?pgbouncer=true"
 
 # Other Prisma commands
 npx prisma migrate dev        # Create and apply migrations
@@ -471,6 +471,8 @@ All 22 users have diverse log entries across different locations and time period
 - Verify mobile layouts in browser responsive mode or on actual devices
 - Test duty workflows: clock in → create logs → clock out cycles
 - Test supervisor features: guards monitoring, incident reviews, location check-ins
+- always
+
 
 ## Documentation
 

@@ -11,6 +11,7 @@ import {
   Settings,
   ChevronLeft,
   LogOut,
+  Clock,
 } from "lucide-react"
 import { SignOutButton } from "@clerk/nextjs"
 import { UserDropdown } from "@/components/user-dropdown"
@@ -62,6 +63,11 @@ const navItems = [
     title: "Users",
     href: "/dashboard/users",
     icon: Users,
+  },
+  {
+    title: "Users Timesheets",
+    href: "/dashboard/timesheets",
+    icon: Clock,
   },
   {
     title: "Settings",
