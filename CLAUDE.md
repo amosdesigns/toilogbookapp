@@ -16,7 +16,35 @@ This codebase maintains **ZERO tolerance for `any` types**. See `/docs/typescrip
 - ✅ Use `unknown` instead of `any` for truly unknown data
 - ❌ NEVER use `any` - no exceptions
 
-### 2. Server Actions ONLY (No API Routes)
+### 2. Server Actions MUST Use Result<T> and RenderError
+
+**ALL server actions MUST return `Result<T>` type and use the `to()` helper for error handling.**
+
+**Required imports:**
+```typescript
+import { to, type Result } from '@/lib/utils/RenderError'
+```
+
+**MANDATORY Pattern:**
+```typescript
+export async function myAction(data: SomeType): Promise<Result<ReturnType>> {
+  try {
+    // ... validation, auth, business logic
+    return { ok: true, data: result }
+  } catch (error) {
+    console.error('[ACTION_NAME]', error)
+    return to(error) // ALWAYS use to() helper
+  }
+}
+```
+
+**NEVER use these old patterns:**
+- ❌ `{ success: false, error: "message" }`
+- ❌ `{ success: true, data: ... }`
+- ❌ Manual error object construction
+- ✅ ONLY use `{ ok: true, data: ... }` and `{ ok: false, message: ... }` via `to()`
+
+### 3. Server Actions ONLY (No API Routes)
 
 All database operations use Next.js Server Actions located in `/lib/actions/`. Never create API routes for database interactions.
 
@@ -31,8 +59,8 @@ Town of Islip Marina Guard Logbook - A comprehensive security management system 
 
 - **Node.js**: 22.12+ (required for Prisma 7)
 - **Next.js**: 16.0.3
-- **Prisma**: 7.0.0
-- **Database**: PostgreSQL
+- **Prisma**: 7.0.1
+- **Database**: PostgreSQL (Supabase)
 
 **Important**: This project uses Prisma 7 which requires Node.js 22.12+. If using nvm:
 
@@ -55,25 +83,52 @@ npm run lint           # Run ESLint
 
 ```bash
 # Prisma Studio - GUI database browser
-# Note: Prisma 7 requires passing --url flag explicitly
-npx prisma studio --url "postgresql://postgres.qnhcymavgkchvymkkktr:[databasepasword]@C29@aws-1-us-east-1.pooler.supabase.com:6543/postgres?pgbouncer=true"
+npx prisma studio
 
-# With nvm (recommended for Node 22):
-nvm use 22 && npx prisma studio --url "postgresql://postgres.qnhcymavgkchvymkkktr:[password]@aws-1-us-east-1.pooler.supabase.com:6543/postgres?pgbouncer=true"
-
-# Other Prisma commands
+# Migration commands
 npx prisma migrate dev        # Create and apply migrations
-npx prisma generate           # Generate Prisma client (run after schema changes)
+npx prisma migrate dev --name migration_name --create-only  # Create migration without applying
 npx prisma db push            # Push schema changes without migration (dev only)
-npx prisma db seed            # Seed database with 22 test users
+
+# Client generation
+npx prisma generate           # Generate Prisma client (run after schema changes)
+
+# Database seeding
+npm run db:seed               # Seed database with test data
 ```
 
 ### Prisma 7 Configuration
 
-Prisma 7 uses a separate configuration file for datasource connection:
+**CRITICAL**: Prisma 7 requires a configuration file in the **ROOT directory** (not in `prisma/` folder).
 
+**File Location**: `prisma.config.ts` (in project root)
+
+**Required Format**:
+```typescript
+import 'dotenv/config'
+import { defineConfig, env } from 'prisma/config'
+
+export default defineConfig({
+  schema: 'prisma/schema.prisma',
+  datasource: {
+    url: env('DATABASE_URL')
+  },
+  migrations: {
+    path: 'prisma/migrations'
+  }
+})
+```
+
+**Key Points**:
+- ✅ Config file MUST be in root directory (not `prisma/` folder)
+- ✅ Import from `'prisma/config'` (NOT `'@prisma/config'`)
+- ✅ Include `import 'dotenv/config'` at the top
+- ✅ Use `env('DATABASE_URL')` helper (NOT `process.env.DATABASE_URL`)
+
+**Project Files**:
 - **Schema**: `prisma/schema.prisma` (defines models and generator)
-- **Config**: `prisma/prisma.config.ts` (defines datasource connection URL)
+- **Config**: `prisma.config.ts` (defines datasource connection URL - in root!)
+- **Migrations**: `prisma/migrations/` (migration history)
 
 ## Architecture Overview
 
@@ -360,7 +415,10 @@ components/
   ├── shift/                # Shift calendar (react-big-calendar)
   ├── layouts/
   │   ├── public/           # Mobile nav (bottom-nav.tsx, mobile-header.tsx)
-  │   └── admin/            # Desktop nav (admin-sidebar.tsx)
+  │   ├── admin/            # Desktop nav (admin-sidebar.tsx)
+  │   └── authenticated-layout-wrapper.tsx  # Shared wrapper with NotificationBanner
+  ├── notifications/        # Notification system
+  │   └── notification-banner.tsx   # Global notification banner
   ├── tables/               # Data tables
   └── ui/                   # shadcn/ui components
 ```
@@ -381,6 +439,43 @@ components/
 2. **Supervisor Alert**: Unreviewed high-severity incidents appear on supervisor dashboard
 3. **Review**: Supervisor adds `reviewNotes`, sets `reviewedBy` and `reviewedAt`
 4. **Follow-up**: If `followUpRequired`, incident tracked for further action
+
+### Global Notification System
+
+The application includes a centralized notification banner system that displays important alerts to all authenticated users.
+
+**Features**:
+- Global notifications (visible to all users) or user-specific notifications
+- Priority levels: LOW, MEDIUM, HIGH, URGENT (urgent notifications pulse)
+- Notification types: INFO, WARNING, SUCCESS, ERROR, ALERT (with color coding)
+- Dismissible notifications (tracked per user in database)
+- Auto-refresh every 30 seconds
+- Works across both admin and public interfaces
+
+**Database Model**: `Notification` in `prisma/schema.prisma`
+- `userId`: null for global notifications, specific user ID for targeted notifications
+- `type`: Determines icon and color scheme
+- `priority`: Determines display order and visual treatment
+- `dismissedAt`: Timestamp when user dismissed the notification
+
+**Server Actions**: `lib/actions/notification-actions.ts`
+- `getNotifications()`: Fetches non-dismissed notifications for current user
+- `dismissNotification(id)`: Marks notification as dismissed
+
+**Component**: `components/notifications/notification-banner.tsx`
+- Client component that polls for new notifications
+- Integrated via `AuthenticatedLayoutWrapper` in both layouts
+
+**Creating Notifications**:
+```sql
+-- Example: Global notification for all users
+INSERT INTO "notifications" ("id", "userId", "type", "priority", "title", "message", "dismissible", "createdAt", "updatedAt")
+VALUES ('notif_123', NULL, 'ALERT', 'URGENT', 'System Maintenance', 'Scheduled downtime tonight at 2 AM EST.', true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
+
+-- Example: User-specific notification
+INSERT INTO "notifications" ("id", "userId", "type", "priority", "title", "message", "dismissible", "createdAt", "updatedAt")
+VALUES ('notif_456', 'user_id_here', 'INFO', 'MEDIUM', 'Welcome!', 'Your account has been activated.', true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
+```
 
 ### Permission Checks
 

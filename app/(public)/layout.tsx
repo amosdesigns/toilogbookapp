@@ -1,6 +1,6 @@
 import { MobileNav } from "@/components/layouts/public/mobile-nav"
 import { MobileHeader } from "@/components/layouts/public/mobile-header"
-import { NotificationBanner } from "@/components/notifications/notification-banner"
+import { AuthenticatedLayoutWrapper } from "@/components/layouts/authenticated-layout-wrapper"
 import { getCurrentUser } from "@/lib/auth/sync-user"
 import { redirect } from "next/navigation"
 
@@ -21,10 +21,9 @@ export default async function PublicLayout({
 
       {/* Main content with bottom padding for mobile nav */}
       <main className="flex-1 pb-20 px-4 py-6 overflow-y-auto">
-        {/* Global Notifications */}
-        <NotificationBanner className="mb-4" />
-
-        {children}
+        <AuthenticatedLayoutWrapper>
+          {children}
+        </AuthenticatedLayoutWrapper>
       </main>
 
       {/* Mobile bottom navigation */}

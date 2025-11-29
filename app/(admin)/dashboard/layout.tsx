@@ -1,6 +1,6 @@
 import { AdminSidebar } from "@/components/layouts/admin/admin-sidebar"
-import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar"
-import { NotificationBanner } from "@/components/notifications/notification-banner"
+import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar"
+import { AuthenticatedLayoutWrapper } from "@/components/layouts/authenticated-layout-wrapper"
 import { getCurrentUser } from "@/lib/auth/sync-user"
 import { redirect } from "next/navigation"
 
@@ -20,11 +20,13 @@ export default async function AdminLayout({
       <div className="flex min-h-screen w-full">
         <AdminSidebar user={user} />
         <SidebarInset>
+          <header className="flex h-14 items-center gap-4 border-b px-4 lg:h-16 lg:px-6">
+            <SidebarTrigger />
+          </header>
           <main className="flex-1 p-4 md:p-6 lg:p-6">
-            {/* Global Notifications */}
-            <NotificationBanner className="mb-4" />
-
-            {children}
+            <AuthenticatedLayoutWrapper>
+              {children}
+            </AuthenticatedLayoutWrapper>
           </main>
         </SidebarInset>
       </div>

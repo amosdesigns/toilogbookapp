@@ -1,22 +1,13 @@
 import React from 'react'
 
-const LogsManagementPage = () => {
-  // this page is for management of the logs in the admin dashboard
-  // it should only be accessible to admin users or higher roles only. if you are not an admin user, you should be redirected to the dashboard page.
-  // the page will display logs in a table format with options to filter, search, and sort the logs.
-  //from here, you can implement the logic to fetch and display logs as needed.
-  // you can also add pagination if there are many logs to display.
-  // each log entry should display relevant information such as timestamp, user, action performed, and any other pertinent details.
-  // additionally, you can implement functionality to view detailed information about each log entry when clicked.
-  // consider adding export functionality to download logs in CSV or PDF format for record-keeping purposes.
-  // ensure that proper access controls are in place to restrict log management features to authorized users only.
-  //from this page we also need to manage logs report s as this will be part of the admin dashboard functionalities. filing systems for logs should also be considered.
+const LogManagementPage = () => {
+  // this is a book logbook management page for admin dashboard by location.
+  //the logs Management page for admin dashboard only accessible by supervisor users or higher to view system logs or activity logs.
+  //This is a placeholder for now. You can expand it later with actual log functionalities where you can view, filter, and manage logs.
+  // from this page we should be able to create a incident report based on log data and start the reporting of this incident to relevant authorities roles. this workflow  start with the log data and the guard. next would be the supervisor review and finally the admin or higher authority to send the report to relevant authorities. at any point the report can be saved as draft or sent for review or final submission and  should be able to tracked and printed as needed. also should have a notification system to alert relevant users when a log is created or an incident report is generated.
 
-
-
-  return (
-    <div> Logs Management Page</div>
-  )
+  //this data should come from the Guard logs Notes or activity logs based on the location and guard assigned to that location.
+  return <div>Log management page</div>;
 }
 
-export default LogsManagementPage;
+export default LogManagementPage;

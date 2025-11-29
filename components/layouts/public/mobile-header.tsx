@@ -6,9 +6,8 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { UserDropdown } from "@/components/user-dropdown"
-
+import Logo from "@/components/layouts/Logo"
 import { getActiveDutySession } from "@/lib/actions/duty-session-actions"
-import Logo from "../Logo"
 
 interface MobileHeaderProps {
   title: string
@@ -57,7 +56,7 @@ export function MobileHeader({ title, onMenuClick, user }: MobileHeaderProps) {
           </Button>
         )}
         <div className="flex items-center gap-2 flex-1">
-          <Logo />
+          <Logo size={32} />
           <h1 className="text-xs font-semibold truncate">
             {title}
           </h1>

@@ -9,21 +9,20 @@ datasource db {
   provider = "postgresql"
 }
 
-// Add these enums (typically after your existing enums like Status, Role, etc.)
-enum NotificationAction {
-  ADDED
-  SIGNED_IN
-  DELETED
-  UPDATED
+// Notification enums for global notification banner
+enum NotificationType {
+  INFO
+  WARNING
+  SUCCESS
+  ERROR
+  ALERT
 }
 
-enum NotificationTarget {
-  USER_PROFILE
-  EMAIL
-  SUPERVISOR
-  SUPERADMIN
-  GUARD
-  COMMENT
+enum NotificationPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
 }
 // Enums
 enum Role {
@@ -127,6 +126,7 @@ model User {
   shiftAssignments          ShiftAssignment[]         // Shifts assigned to this user
   recurringUserAssignments  RecurringUserAssignment[] // Recurring patterns assigned to this user
   safetyChecklistResponses  SafetyChecklistResponse[]
+  notifications             Notification[]            // User-specific notifications
 
   @@index([username])
   @@index([clerkId])
@@ -339,19 +339,30 @@ model LocationCheckIn {
   @@index([checkInTime])
 }
 
-// Add this model (typically after your existing models)
+// Global notification banner system
 model Notification {
-  id        String             @id @default(cuid())
-  user      String
-  action    NotificationAction
-  target    NotificationTarget
-  message   String?
-  unread    Boolean            @default(true)
-  createdAt DateTime           @default(now())
-  updateAt DateTime            @updatedAt
+  id          String               @id @default(cuid())
+  userId      String?              // If null, notification is global for all users
+  user        User?                @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@index([user])
-  @@index([unread])
+  type        NotificationType     @default(INFO)
+  priority    NotificationPriority @default(MEDIUM)
+  title       String
+  message     String               @db.Text
+
+  actionLabel String?
+  actionUrl   String?
+
+  dismissible Boolean              @default(true)
+  dismissedAt DateTime?            // When user dismissed it
+
+  createdAt   DateTime             @default(now())
+  updatedAt   DateTime             @updatedAt
+
+  @@index([userId])
+  @@index([dismissedAt])
+  @@index([priority])
+  @@index([createdAt])
   @@map("notifications")
 }
 
