@@ -17,9 +17,9 @@ export interface Notification {
   priority: NotificationPriority
   title: string
   message: string
-  actionLabel?: string
-  actionUrl?: string
-  dismissible?: boolean
+  actionLabel?: string | null
+  actionUrl?: string | null
+  dismissible: boolean
   createdAt: Date
 }
 
@@ -64,8 +64,8 @@ export function NotificationBanner({ className }: NotificationBannerProps) {
   const fetchNotifications = async () => {
     try {
       const result = await getNotifications()
-      if (result.success) {
-        setNotifications(result.notifications)
+      if (result.ok) {
+        setNotifications(result.data)
       }
     } catch (error) {
       console.error("Failed to fetch notifications:", error)
@@ -140,7 +140,7 @@ export function NotificationBanner({ className }: NotificationBannerProps) {
                   </Button>
                 )}
               </div>
-              {notification.dismissible !== false && (
+              {notification.dismissible && (
                 <Button
                   variant="ghost"
                   size="icon"

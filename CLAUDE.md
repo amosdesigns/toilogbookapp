@@ -16,7 +16,35 @@ This codebase maintains **ZERO tolerance for `any` types**. See `/docs/typescrip
 - ✅ Use `unknown` instead of `any` for truly unknown data
 - ❌ NEVER use `any` - no exceptions
 
-### 2. Server Actions ONLY (No API Routes)
+### 2. Server Actions MUST Use Result<T> and RenderError
+
+**ALL server actions MUST return `Result<T>` type and use the `to()` helper for error handling.**
+
+**Required imports:**
+```typescript
+import { to, type Result } from '@/lib/utils/RenderError'
+```
+
+**MANDATORY Pattern:**
+```typescript
+export async function myAction(data: SomeType): Promise<Result<ReturnType>> {
+  try {
+    // ... validation, auth, business logic
+    return { ok: true, data: result }
+  } catch (error) {
+    console.error('[ACTION_NAME]', error)
+    return to(error) // ALWAYS use to() helper
+  }
+}
+```
+
+**NEVER use these old patterns:**
+- ❌ `{ success: false, error: "message" }`
+- ❌ `{ success: true, data: ... }`
+- ❌ Manual error object construction
+- ✅ ONLY use `{ ok: true, data: ... }` and `{ ok: false, message: ... }` via `to()`
+
+### 3. Server Actions ONLY (No API Routes)
 
 All database operations use Next.js Server Actions located in `/lib/actions/`. Never create API routes for database interactions.
 

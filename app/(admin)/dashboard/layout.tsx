@@ -1,6 +1,6 @@
 import { AdminSidebar } from "@/components/layouts/admin/admin-sidebar"
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar"
-import { NotificationBanner } from "@/components/notifications/notification-banner"
+import { AuthenticatedLayoutWrapper } from "@/components/layouts/authenticated-layout-wrapper"
 import { getCurrentUser } from "@/lib/auth/sync-user"
 import { redirect } from "next/navigation"
 
@@ -21,10 +21,9 @@ export default async function AdminLayout({
         <AdminSidebar user={user} />
         <SidebarInset>
           <main className="flex-1 p-4 md:p-6 lg:p-6">
-            {/* Global Notifications */}
-            <NotificationBanner className="mb-4" />
-
-            {children}
+            <AuthenticatedLayoutWrapper>
+              {children}
+            </AuthenticatedLayoutWrapper>
           </main>
         </SidebarInset>
       </div>
