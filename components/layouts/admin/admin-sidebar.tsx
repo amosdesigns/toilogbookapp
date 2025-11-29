@@ -11,6 +11,7 @@ import {
   Settings,
   ChevronLeft,
   LogOut,
+  Clock,
 } from "lucide-react"
 import { SignOutButton } from "@clerk/nextjs"
 import { UserDropdown } from "@/components/user-dropdown"
@@ -30,6 +31,7 @@ import {
 import { Separator } from "@/components/ui/separator"
 import { Button } from "@/components/ui/button"
 import { ThemeToggle } from "@/components/theme-toggle"
+import Logo from "../Logo"
 
 const navItems = [
   {
@@ -56,6 +58,11 @@ const navItems = [
     title: "Users",
     href: "/dashboard/users",
     icon: Users,
+  },
+  {
+    title: "Users Timesheets",
+    href: "/dashboard/timesheets",
+    icon: Clock,
   },
   {
     title: "Settings",
