@@ -30,11 +30,17 @@ import {
 import { Separator } from "@/components/ui/separator"
 import { Button } from "@/components/ui/button"
 import { ThemeToggle } from "@/components/theme-toggle"
+import Logo from "../Logo"
 
 const navItems = [
   {
+    title: "Guard Dashboard",
+    href: "/",
+    icon: LayoutDashboard,
+  },
+  {
     title: "Dashboard",
-    href: "/admin/dashboard",
+    href: "/dashboard",
     icon: LayoutDashboard,
   },
   {
@@ -80,22 +86,19 @@ export function AdminSidebar({ user }: AdminSidebarProps) {
     <Sidebar>
       <SidebarHeader>
         <div className="flex items-center gap-2 px-4 py-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-            <span className="text-sm font-bold">TOI</span>
+          <div className="flex h-8 w-8 items-center justify-center">
+            <Logo />
           </div>
           <div className="flex flex-col flex-1">
             <span className="text-sm font-semibold">Marina Guard</span>
             <span className="text-xs text-muted-foreground">Admin Panel</span>
           </div>
+          <ThemeToggle />
+          <SidebarTrigger>
+            <ChevronLeft className="h-4 w-4" />
+          </SidebarTrigger>
         </div>
-        <div className="px-4 py-2">
-          <SignOutButton redirectUrl="/sign-in">
-            <Button variant="outline" size="sm" className="w-full">
-              <LogOut className="h-4 w-4 mr-2" />
-              Logout
-            </Button>
-          </SignOutButton>
-        </div>
+        <div className="px-4 py-2"></div>
       </SidebarHeader>
 
       <Separator />
@@ -106,8 +109,8 @@ export function AdminSidebar({ user }: AdminSidebarProps) {
           <SidebarGroupContent>
             <SidebarMenu>
               {navItems.map((item) => {
-                const Icon = item.icon
-                const isActive = pathname.startsWith(item.href)
+                const Icon = item.icon;
+                const isActive = pathname.startsWith(item.href);
 
                 return (
                   <SidebarMenuItem key={item.href}>
@@ -118,7 +121,7 @@ export function AdminSidebar({ user }: AdminSidebarProps) {
                       </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
-                )
+                );
               })}
             </SidebarMenu>
           </SidebarGroupContent>
@@ -129,13 +132,15 @@ export function AdminSidebar({ user }: AdminSidebarProps) {
         <div className="flex items-center justify-between px-4 py-2">
           <div className="flex items-center gap-2">
             <UserDropdown user={user} />
-            <ThemeToggle />
+            <SignOutButton redirectUrl="/sign-in">
+              <Button variant="outline" size="sm" className="w-full">
+                <LogOut className="h-4 w-4 mr-2" />
+                Logout
+              </Button>
+            </SignOutButton>
           </div>
-          <SidebarTrigger>
-            <ChevronLeft className="h-4 w-4" />
-          </SidebarTrigger>
         </div>
       </SidebarFooter>
     </Sidebar>
-  )
+  );
 }

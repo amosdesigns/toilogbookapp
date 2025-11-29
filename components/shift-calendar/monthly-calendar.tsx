@@ -28,6 +28,23 @@ interface MonthlyCalendarProps {
   onDayClick?: (date: Date) => void
 }
 
+// Color coding for shift cards based on location ID
+const getShiftColor = (locationId: string) => {
+  const colors = [
+    'bg-blue-100 border-blue-300 dark:bg-blue-900/30 dark:border-blue-700',
+    'bg-green-100 border-green-300 dark:bg-green-900/30 dark:border-green-700',
+    'bg-purple-100 border-purple-300 dark:bg-purple-900/30 dark:border-purple-700',
+    'bg-orange-100 border-orange-300 dark:bg-orange-900/30 dark:border-orange-700',
+    'bg-pink-100 border-pink-300 dark:bg-pink-900/30 dark:border-pink-700',
+    'bg-cyan-100 border-cyan-300 dark:bg-cyan-900/30 dark:border-cyan-700',
+    'bg-amber-100 border-amber-300 dark:bg-amber-900/30 dark:border-amber-700',
+    'bg-indigo-100 border-indigo-300 dark:bg-indigo-900/30 dark:border-indigo-700',
+  ]
+  // Use a simple hash to pick consistent color for each location
+  const hash = locationId.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0)
+  return colors[hash % colors.length]
+}
+
 export function MonthlyCalendar({
   shifts,
   currentDate,
@@ -125,7 +142,10 @@ export function MonthlyCalendar({
                   {dayShifts.map((shift) => (
                     <Card
                       key={shift.id}
-                      className="p-1.5 cursor-pointer hover:shadow-sm transition-shadow text-xs"
+                      className={cn(
+                        "p-1.5 cursor-pointer hover:shadow-sm transition-shadow text-xs border-l-4",
+                        getShiftColor(shift.location.id)
+                      )}
                       onClick={(e) => {
                         e.stopPropagation()
                         onShiftClick(shift)

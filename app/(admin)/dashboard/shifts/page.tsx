@@ -16,6 +16,7 @@ import {
 import { Card } from '@/components/ui/card'
 import { WeeklyCalendar } from '@/components/shift-calendar/weekly-calendar'
 import { MonthlyCalendar } from '@/components/shift-calendar/monthly-calendar'
+import { MeFocusCalendar } from '@/components/shift-calendar/me-focus-calendar'
 import { ShiftFormDialog } from '@/components/shift-calendar/shift-form-dialog'
 import { RecurringPatternDialog } from '@/components/shift-calendar/recurring-pattern-dialog'
 import { toast } from 'sonner'
@@ -30,12 +31,13 @@ export default function ShiftsPage() {
   const router = useRouter()
 
   const [currentDate, setCurrentDate] = useState(new Date())
-  const [viewMode, setViewMode] = useState<'weekly' | 'monthly'>('weekly')
+  const [viewMode, setViewMode] = useState<'weekly' | 'monthly' | 'me-focus'>('me-focus')
   const [selectedLocation, setSelectedLocation] = useState<string>('all')
 
   const [shifts, setShifts] = useState<Shift[]>([])
   const [locations, setLocations] = useState<Location[]>([])
   const [users, setUsers] = useState<User[]>([])
+  const [currentUser, setCurrentUser] = useState<User | null>(null)
 
   const [isShiftDialogOpen, setIsShiftDialogOpen] = useState(false)
   const [isRecurringDialogOpen, setIsRecurringDialogOpen] = useState(false)
@@ -59,6 +61,7 @@ export default function ShiftsPage() {
       const result = await getCurrentUser()
       if (result.ok && result.data) {
         const user = result.data
+        setCurrentUser(user)
 
         // Only Supervisor, Admin, and Super Admin can access
         const allowedRoles = ['SUPERVISOR', 'ADMIN', 'SUPER_ADMIN']
@@ -82,7 +85,7 @@ export default function ShiftsPage() {
   // Fetch initial data
   useEffect(() => {
     fetchData()
-  }, [currentDate, selectedLocation])
+  }, [currentDate, selectedLocation, viewMode])
 
   const fetchData = async () => {
     setIsLoading(true)
@@ -103,12 +106,27 @@ export default function ShiftsPage() {
         toast.error(usersResult.message || 'Failed to load users')
       }
 
-      // Fetch shifts
-      const startDate = new Date(currentDate)
-      startDate.setDate(1) // First day of month
-      const endDate = new Date(currentDate)
-      endDate.setMonth(endDate.getMonth() + 1)
-      endDate.setDate(0) // Last day of month
+      // Fetch shifts based on view mode
+      let startDate: Date
+      let endDate: Date
+
+      if (viewMode === 'me-focus') {
+        // Yesterday to next 7 days (9 days total)
+        startDate = new Date()
+        startDate.setDate(startDate.getDate() - 1)
+        startDate.setHours(0, 0, 0, 0)
+
+        endDate = new Date()
+        endDate.setDate(endDate.getDate() + 7)
+        endDate.setHours(23, 59, 59, 999)
+      } else {
+        // Monthly view - first and last day of month
+        startDate = new Date(currentDate)
+        startDate.setDate(1)
+        endDate = new Date(currentDate)
+        endDate.setMonth(endDate.getMonth() + 1)
+        endDate.setDate(0)
+      }
 
       const shiftsResult = await getShifts({
         startDate: startDate.toISOString(),
@@ -223,8 +241,12 @@ export default function ShiftsPage() {
             </Select>
           </div>
 
-          <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as 'weekly' | 'monthly')}>
+          <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as 'weekly' | 'monthly' | 'me-focus')}>
             <TabsList>
+              <TabsTrigger value="me-focus">
+                <Calendar className="h-4 w-4 mr-2" />
+                Me Focus
+              </TabsTrigger>
               <TabsTrigger value="weekly">
                 <Calendar className="h-4 w-4 mr-2" />
                 Week
@@ -243,7 +265,13 @@ export default function ShiftsPage() {
           </div>
         ) : (
           <>
-            {viewMode === 'weekly' ? (
+            {viewMode === 'me-focus' ? (
+              <MeFocusCalendar
+                shifts={filteredShifts}
+                currentUserId={currentUser?.id || ''}
+                onShiftClick={handleShiftClick}
+              />
+            ) : viewMode === 'weekly' ? (
               <WeeklyCalendar
                 shifts={filteredShifts}
                 currentDate={currentDate}

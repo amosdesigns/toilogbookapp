@@ -6,8 +6,9 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { UserDropdown } from "@/components/user-dropdown"
-import Image from "next/image"
+
 import { getActiveDutySession } from "@/lib/actions/duty-session-actions"
+import Logo from "../Logo"
 
 interface MobileHeaderProps {
   title: string
@@ -56,22 +57,7 @@ export function MobileHeader({ title, onMenuClick, user }: MobileHeaderProps) {
           </Button>
         )}
         <div className="flex items-center gap-2 flex-1">
-          {/* Light mode logo */}
-          <Image
-            src="/images/toilogo.png"
-            alt="Town of Islip"
-            width={32}
-            height={32}
-            className="block dark:hidden"
-          />
-          {/* Dark mode logo */}
-          <Image
-            src="/images/seal_blue_sm.png"
-            alt="Town of Islip"
-            width={32}
-            height={32}
-            className="hidden dark:block"
-          />
+          <Logo />
           <h1 className="text-xs font-semibold truncate">
             {title}
           </h1>
