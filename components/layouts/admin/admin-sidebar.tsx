@@ -9,7 +9,6 @@ import {
   MapPin,
   Users,
   Settings,
-  ChevronLeft,
   LogOut,
   Clock,
   Home,
@@ -27,7 +26,6 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarTrigger,
 } from "@/components/ui/sidebar"
 import { Separator } from "@/components/ui/separator"
 import { Button } from "@/components/ui/button"
@@ -42,7 +40,7 @@ const navItems = [
   },
   {
     title: "Dashboard",
-    href: "/admin/dashboard",
+    href: "/dashboard",
     icon: LayoutDashboard,
   },
   {
@@ -106,8 +104,8 @@ export function AdminSidebar({ user }: AdminSidebarProps) {
           <SidebarGroupContent>
             <SidebarMenu>
               {navItems.map((item) => {
-                const Icon = item.icon
-                const isActive = pathname.startsWith(item.href)
+                const Icon = item.icon;
+                const isActive = pathname.startsWith(item.href);
 
                 return (
                   <SidebarMenuItem key={item.href}>
@@ -118,7 +116,7 @@ export function AdminSidebar({ user }: AdminSidebarProps) {
                       </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
-                )
+                );
               })}
             </SidebarMenu>
           </SidebarGroupContent>
@@ -137,5 +135,5 @@ export function AdminSidebar({ user }: AdminSidebarProps) {
         </div>
       </SidebarFooter>
     </Sidebar>
-  )
+  );
 }

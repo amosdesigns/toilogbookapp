@@ -113,16 +113,48 @@ export function ShiftFormDialog({
     },
   })
 
+  // Reset form when shift changes
   useEffect(() => {
-    if (shift?.assignments) {
-      setSelectedUsers(
-        shift.assignments.map((a: any) => ({
-          userId: a.user.id,
-          role: a.role,
-        }))
-      )
+    if (shift) {
+      // Reset form with shift data
+      form.reset({
+        name: shift.name,
+        startTime: format(new Date(shift.startTime), "yyyy-MM-dd'T'HH:mm"),
+        endTime: format(new Date(shift.endTime), "yyyy-MM-dd'T'HH:mm"),
+        locationId: shift.location.id,
+      })
+
+      // Set assignments
+      if (shift.assignments) {
+        setSelectedUsers(
+          shift.assignments.map((a: any) => ({
+            userId: a.user.id,
+            role: a.role,
+          }))
+        )
+      }
+    } else {
+      // Reset to default values for new shift
+      form.reset({
+        name: '',
+        startTime: defaultDate && defaultHour !== undefined
+          ? format(
+              new Date(defaultDate.setHours(defaultHour, 0, 0, 0)),
+              "yyyy-MM-dd'T'HH:mm"
+            )
+          : '',
+        endTime: defaultDate && defaultHour !== undefined
+          ? format(
+              new Date(defaultDate.setHours(defaultHour + 8, 0, 0, 0)),
+              "yyyy-MM-dd'T'HH:mm"
+            )
+          : '',
+        locationId: '',
+      })
+      setSelectedUsers([])
     }
-  }, [shift])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [shift, defaultDate, defaultHour])
 
   useEffect(() => {
     const locationId = form.watch('locationId')
