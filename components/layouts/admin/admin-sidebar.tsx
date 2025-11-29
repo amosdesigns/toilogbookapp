@@ -12,6 +12,7 @@ import {
   ChevronLeft,
   LogOut,
   Clock,
+  Home,
 } from "lucide-react"
 import { SignOutButton } from "@clerk/nextjs"
 import { UserDropdown } from "@/components/user-dropdown"
@@ -34,6 +35,11 @@ import { ThemeToggle } from "@/components/theme-toggle"
 import Logo from "../Logo"
 
 const navItems = [
+  {
+    title: "Guard Dashboard",
+    href: "/",
+    icon: Home,
+  },
   {
     title: "Dashboard",
     href: "/admin/dashboard",
@@ -86,22 +92,9 @@ export function AdminSidebar({ user }: AdminSidebarProps) {
   return (
     <Sidebar>
       <SidebarHeader>
-        <div className="flex items-center gap-2 px-4 py-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-            <span className="text-sm font-bold">TOI</span>
-          </div>
-          <div className="flex flex-col flex-1">
-            <span className="text-sm font-semibold">Marina Guard</span>
-            <span className="text-xs text-muted-foreground">Admin Panel</span>
-          </div>
-        </div>
-        <div className="px-4 py-2">
-          <SignOutButton redirectUrl="/sign-in">
-            <Button variant="outline" size="sm" className="w-full">
-              <LogOut className="h-4 w-4 mr-2" />
-              Logout
-            </Button>
-          </SignOutButton>
+        <div className="flex items-center justify-between px-4 py-2">
+          <Logo size={32} showText />
+          <ThemeToggle />
         </div>
       </SidebarHeader>
 
@@ -133,14 +126,14 @@ export function AdminSidebar({ user }: AdminSidebarProps) {
       </SidebarContent>
 
       <SidebarFooter>
-        <div className="flex items-center justify-between px-4 py-2">
-          <div className="flex items-center gap-2">
-            <UserDropdown user={user} />
-            <ThemeToggle />
-          </div>
-          <SidebarTrigger>
-            <ChevronLeft className="h-4 w-4" />
-          </SidebarTrigger>
+        <div className="flex items-center justify-between gap-2 px-4 py-2">
+          <UserDropdown user={user} />
+          <SignOutButton redirectUrl="/sign-in">
+            <Button variant="outline" size="sm">
+              <LogOut className="h-4 w-4 mr-2" />
+              Logout
+            </Button>
+          </SignOutButton>
         </div>
       </SidebarFooter>
     </Sidebar>

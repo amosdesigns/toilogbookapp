@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { Alert, AlertDescription } from "@/components/ui/alert"
+import { Alert } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { X, Bell, AlertCircle, Info, CheckCircle, AlertTriangle } from "lucide-react"
@@ -108,49 +108,41 @@ export function NotificationBanner({ className }: NotificationBannerProps) {
           <Alert
             key={notification.id}
             className={cn(
-              "relative",
+              "relative flex items-center gap-2 overflow-hidden",
               typeStyles[notification.type],
               notification.priority === "urgent" && "animate-pulse"
             )}
           >
-            <div className="flex items-start gap-3">
-              <Icon className="h-5 w-5 mt-0.5 shrink-0" />
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-1">
-                  <p className="font-semibold text-sm">{notification.title}</p>
-                  {notification.priority !== "low" && (
-                    <Badge className={cn("text-xs", priorityColors[notification.priority])}>
-                      {notification.priority.toUpperCase()}
-                    </Badge>
-                  )}
-                </div>
-                <AlertDescription className="text-sm">
-                  {notification.message}
-                </AlertDescription>
-                {notification.actionLabel && notification.actionUrl && (
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="mt-2"
-                    asChild
-                  >
-                    <a href={notification.actionUrl}>
-                      {notification.actionLabel}
-                    </a>
-                  </Button>
-                )}
-              </div>
-              {notification.dismissible && (
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-6 w-6 shrink-0"
-                  onClick={() => dismissNotification(notification.id)}
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              )}
-            </div>
+            <Icon className="h-4 w-4 shrink-0" />
+            <p className="font-semibold text-sm shrink-0">{notification.title}</p>
+            {notification.priority !== "low" && (
+              <Badge className={cn("text-xs shrink-0", priorityColors[notification.priority])}>
+                {notification.priority.toUpperCase()}
+              </Badge>
+            )}
+            <span className="text-sm flex-1 truncate">{notification.message}</span>
+            {notification.actionLabel && notification.actionUrl && (
+              <Button
+                size="sm"
+                variant="outline"
+                className="shrink-0"
+                asChild
+              >
+                <a href={notification.actionUrl}>
+                  {notification.actionLabel}
+                </a>
+              </Button>
+            )}
+            {notification.dismissible && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-6 w-6 shrink-0"
+                onClick={() => dismissNotification(notification.id)}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            )}
           </Alert>
         )
       })}
