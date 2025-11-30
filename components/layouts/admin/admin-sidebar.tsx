@@ -6,7 +6,6 @@ import {
   LayoutDashboard,
   FileText,
   Calendar,
-  MapPin,
   Users,
   Settings,
   LogOut,
@@ -52,11 +51,6 @@ const navItems = [
     title: "Shifts",
     href: "/dashboard/shifts",
     icon: Calendar,
-  },
-  {
-    title: "Locations",
-    href: "/dashboard/locations",
-    icon: MapPin,
   },
   {
     title: "Users",
