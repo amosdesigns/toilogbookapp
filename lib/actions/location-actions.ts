@@ -54,7 +54,7 @@ export async function getAllLocations() {
 // ADMIN MANAGEMENT ACTIONS
 // ============================================================================
 
-interface Location {
+export interface Location {
   id: string
   name: string
   description: string | null
