@@ -266,7 +266,7 @@ export async function createSafetyChecklistItem(
 
     // Check for duplicate name
     const existing = await prisma.safetyChecklistItem.findFirst({
-      where: { name: validation.data.name },
+      where: { name: { equals: validation.data.name, mode: 'insensitive' } },
     })
 
     if (existing) {
