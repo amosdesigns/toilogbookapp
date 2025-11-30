@@ -202,6 +202,6 @@ export function LogsTable({ logs, onViewLog, onEditLog, onArchiveLog }: LogsTabl
         </div>
       </div>
     )}
-  </div>
+    </div>
   )
 }
