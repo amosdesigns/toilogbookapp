@@ -14,7 +14,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { createSafetyChecklistItem, type SafetyChecklistItem } from '@/lib/actions/safety-checklist-actions'
+import { createMultipleSafetyChecklistItems, type SafetyChecklistItem } from '@/lib/actions/safety-checklist-actions'
 import { DEFAULT_CHECKLIST_ITEMS } from '@/lib/constants/default-checklist-items'
 
 interface EnableDefaultItemsDialogProps {
@@ -64,36 +64,34 @@ export function EnableDefaultItemsDialog({
     }
 
     setLoading(true)
-    let successCount = 0
-    let errorCount = 0
 
-    // Create selected items
-    for (const index of selectedItems) {
+    // Collect all selected items for batch creation
+    const itemsToCreate = Array.from(selectedItems).map((index) => {
       const item = availableDefaults[index]
-      const result = await createSafetyChecklistItem({
+      return {
         name: item.name,
         description: item.description,
         order: item.order,
         isActive: true,
-      })
-
-      if (result.ok) {
-        successCount++
-      } else {
-        errorCount++
       }
-    }
+    })
+
+    // Create all items in a single batch operation
+    const result = await createMultipleSafetyChecklistItems({ items: itemsToCreate })
 
     setLoading(false)
 
-    if (errorCount === 0) {
-      toast.success(`Successfully added ${successCount} checklist items`)
+    if (result.ok) {
+      const { created, skipped } = result.data
+      if (skipped.length > 0) {
+        toast.warning(`Added ${created} items, ${skipped.length} skipped (already exist)`)
+      } else {
+        toast.success(`Successfully added ${created} checklist items`)
+      }
       setSelectedItems(new Set())
       onSuccess()
     } else {
-      toast.warning(`Added ${successCount} items, ${errorCount} failed`)
-      setSelectedItems(new Set())
-      onSuccess()
+      toast.error(result.message || 'Failed to add checklist items')
     }
   }
 
