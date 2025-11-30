@@ -49,7 +49,7 @@ export function EditChecklistItemDialog({
 }: EditChecklistItemDialogProps) {
   const [loading, setLoading] = useState(false)
 
-  const form = useForm<UpdateSafetyChecklistItemInput>({
+  const form = useForm({
     resolver: zodResolver(updateSafetyChecklistItemSchema),
     defaultValues: {
       name: item.name,

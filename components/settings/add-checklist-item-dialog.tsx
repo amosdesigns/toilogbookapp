@@ -43,7 +43,7 @@ export function AddChecklistItemDialog({
 }: AddChecklistItemDialogProps) {
   const [loading, setLoading] = useState(false)
 
-  const form = useForm<CreateSafetyChecklistItemInput>({
+  const form = useForm({
     resolver: zodResolver(createSafetyChecklistItemSchema),
     defaultValues: {
       name: '',

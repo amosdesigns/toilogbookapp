@@ -3,8 +3,8 @@ import { z } from 'zod'
 export const createSafetyChecklistItemSchema = z.object({
   name: z.string().min(1, 'Item name is required').max(200, 'Name too long'),
   description: z.string().max(500, 'Description too long').optional().nullable(),
-  order: z.number().int().min(0, 'Order must be non-negative').default(0),
-  isActive: z.boolean().default(true),
+  order: z.number().int().min(0, 'Order must be non-negative').optional(),
+  isActive: z.boolean().optional(),
 })
 
 export const updateSafetyChecklistItemSchema = z.object({
@@ -23,6 +23,7 @@ export const reorderSafetyChecklistItemsSchema = z.object({
   ),
 })
 
+<<<<<<< Updated upstream
 export const createMultipleSafetyChecklistItemsSchema = z.object({
   items: z
     .array(
@@ -44,6 +45,10 @@ export type CreateSafetyChecklistItemInput = Omit<
   order: number
   isActive: boolean
 }
+=======
+// Type inference
+export type CreateSafetyChecklistItemInput = z.infer<typeof createSafetyChecklistItemSchema>
+>>>>>>> Stashed changes
 export type UpdateSafetyChecklistItemInput = z.infer<typeof updateSafetyChecklistItemSchema>
 export type ReorderSafetyChecklistItemsInput = z.infer<typeof reorderSafetyChecklistItemsSchema>
 export type CreateMultipleSafetyChecklistItemsInput = {

@@ -274,8 +274,8 @@ export async function createSafetyChecklistItem(
     }
 
     // If no order specified, put at end
-    let order = validation.data.order
-    if (order === 0) {
+    let order = validation.data.order ?? 0
+    if (order === 0 && !validation.data.order) {
       const maxOrder = await prisma.safetyChecklistItem.findFirst({
         orderBy: { order: 'desc' },
         select: { order: true },
@@ -288,7 +288,7 @@ export async function createSafetyChecklistItem(
         name: validation.data.name,
         description: validation.data.description || null,
         order,
-        isActive: validation.data.isActive,
+        isActive: validation.data.isActive ?? true,
       },
       select: {
         id: true,
