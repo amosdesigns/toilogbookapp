@@ -14,7 +14,7 @@ import { Button } from "@/components/ui/button"
 import { Eye, Edit, Archive, ChevronLeft, ChevronRight } from "lucide-react"
 import { formatDateTime } from "@/lib/utils"
 
-const ITEMS_PER_PAGE = 25
+const ITEMS_PER_PAGE = 20
 
 interface Log {
   id: string
