@@ -24,6 +24,7 @@ enum NotificationPriority {
   HIGH
   URGENT
 }
+
 // Enums
 enum Role {
   SUPER_ADMIN
@@ -101,32 +102,51 @@ enum AlertPriority {
 
 // Models
 model User {
-  id        String   @id @default(cuid())
-  clerkId   String   @unique
-  email     String   @unique
-  username  String?   @unique
-  firstName String
-  lastName  String
-  imageUrl  String?
-  phone     String?
-  streetAddress   String?
-  city            String?
-  state           String?
-  zipCode         String?
-  role      Role     @default(GUARD)
+  id            String  @id @default(cuid())
+  clerkId       String  @unique
+  email         String  @unique
+  username      String? @unique
+  firstName     String
+  lastName      String
+  imageUrl      String?
+  phone         String?
+  streetAddress String?
+  city          String?
+  state         String?
+  zipCode       String?
+  role          Role    @default(GUARD)
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
   archivedAt DateTime?
 
-  logs                      Log[]
-  reviewedLogs              Log[]                     @relation("ReviewedLogs")
-  dutySessions              DutySession[]
-  locationCheckIns          LocationCheckIn[]
-  shiftAssignments          ShiftAssignment[]         // Shifts assigned to this user
-  recurringUserAssignments  RecurringUserAssignment[] // Recurring patterns assigned to this user
-  safetyChecklistResponses  SafetyChecklistResponse[]
-  notifications             Notification[]            // User-specific notifications
+  logs                     Log[]
+  reviewedLogs             Log[]                     @relation("ReviewedLogs")
+  dutySessions             DutySession[]
+  locationCheckIns         LocationCheckIn[]
+  shiftAssignments         ShiftAssignment[] // Shifts assigned to this user
+  recurringUserAssignments RecurringUserAssignment[] // Recurring patterns assigned to this user
+  safetyChecklistResponses SafetyChecklistResponse[]
+  notifications            Notification[] // User-specific notifications
+
+  // Timesheet relations
+  timesheets           Timesheet[] // Timesheets for this user
+  createdTimesheets    Timesheet[]           @relation("CreatedTimesheets")
+  approvedTimesheets   Timesheet[]           @relation("ApprovedTimesheets")
+  rejectedTimesheets   Timesheet[]           @relation("RejectedTimesheets")
+  submittedTimesheets  Timesheet[]           @relation("SubmittedTimesheets")
+  timesheetAdjustments TimesheetAdjustment[]
+
+  // Incident Report relations
+  createdIncidentReports    IncidentReport[] @relation("CreatedIncidentReports")
+  submittedIncidentReports  IncidentReport[] @relation("SubmittedIncidentReports")
+  reviewedIncidentReports   IncidentReport[] @relation("ReviewedIncidentReports")
+  approvedIncidentReports   IncidentReport[] @relation("ApprovedIncidentReports")
+  authoritySubmittedReports IncidentReport[] @relation("AuthoritySubmittedReports")
+  closedIncidentReports     IncidentReport[] @relation("ClosedIncidentReports")
+
+  // Log Edit relations
+  logEdits LogEdit[]
 
   @@index([username])
   @@index([clerkId])
@@ -134,15 +154,15 @@ model User {
 }
 
 model Location {
-  id          String   @id @default(cuid())
-  name        String   @unique
+  id          String  @id @default(cuid())
+  name        String  @unique
   description String?
   address     String?
-  isActive    Boolean  @default(true)
-  maxCapacity Int?     // Optional: Maximum number of guards that can be assigned per shift
+  isActive    Boolean @default(true)
+  maxCapacity Int? // Optional: Maximum number of guards that can be assigned per shift
 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   logs                     Log[]
   shifts                   Shift[]
@@ -155,27 +175,30 @@ model Location {
   maintenanceRequests      MaintenanceRequest[]
   alerts                   Alert[]
   safetyChecklistResponses SafetyChecklistResponse[]
+  timesheetEntries         TimesheetEntry[]
+  incidentReports          IncidentReport[]
 
   @@index([name])
 }
 
 model Shift {
-  id                    String   @id @default(cuid())
-  name                  String
-  startTime             DateTime
-  endTime               DateTime
-  locationId            String
-  recurringPatternId    String?  // Link to recurring pattern if this shift was generated from one
+  id                 String   @id @default(cuid())
+  name               String
+  startTime          DateTime
+  endTime            DateTime
+  locationId         String
+  recurringPatternId String? // Link to recurring pattern if this shift was generated from one
 
-  location              Location @relation(fields: [locationId], references: [id])
-  recurringPattern      RecurringShiftPattern? @relation(fields: [recurringPatternId], references: [id])
+  location         Location               @relation(fields: [locationId], references: [id])
+  recurringPattern RecurringShiftPattern? @relation(fields: [recurringPatternId], references: [id])
 
-  createdAt             DateTime @default(now())
-  updatedAt             DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  logs                  Log[]
-  dutySessions          DutySession[]
-  assignments           ShiftAssignment[] // Multiple users can be assigned
+  logs             Log[]
+  dutySessions     DutySession[]
+  assignments      ShiftAssignment[] // Multiple users can be assigned
+  timesheetEntries TimesheetEntry[]
 
   @@index([locationId])
   @@index([recurringPatternId])
@@ -184,16 +207,16 @@ model Shift {
 
 // Many-to-many relationship between Shifts and Users
 model ShiftAssignment {
-  id          String   @id @default(cuid())
-  shiftId     String
-  userId      String
-  role        String?  // Optional: "PRIMARY", "BACKUP", "SUPERVISOR" etc.
+  id      String  @id @default(cuid())
+  shiftId String
+  userId  String
+  role    String? // Optional: "PRIMARY", "BACKUP", "SUPERVISOR" etc.
 
-  shift       Shift    @relation(fields: [shiftId], references: [id], onDelete: Cascade)
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  shift Shift @relation(fields: [shiftId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@unique([shiftId, userId]) // Prevent duplicate assignments
   @@index([shiftId])
@@ -202,24 +225,24 @@ model ShiftAssignment {
 
 // Recurring shift patterns (e.g., "Every Monday 7am-3pm at Location X")
 model RecurringShiftPattern {
-  id              String   @id @default(cuid())
-  name            String
-  locationId      String
-  startTime       String   // Time only, e.g., "07:00"
-  endTime         String   // Time only, e.g., "15:00"
-  daysOfWeek      String   // JSON array: [1,3,5] for Mon, Wed, Fri (0=Sunday, 6=Saturday)
-  isActive        Boolean  @default(true)
+  id         String  @id @default(cuid())
+  name       String
+  locationId String
+  startTime  String // Time only, e.g., "07:00"
+  endTime    String // Time only, e.g., "15:00"
+  daysOfWeek String // JSON array: [1,3,5] for Mon, Wed, Fri (0=Sunday, 6=Saturday)
+  isActive   Boolean @default(true)
 
   // Pattern validity period
-  startDate       DateTime
-  endDate         DateTime? // Null = indefinite
+  startDate DateTime
+  endDate   DateTime? // Null = indefinite
 
-  location        Location @relation(fields: [locationId], references: [id])
-  shifts          Shift[]  // Shifts generated from this pattern
+  location        Location                  @relation(fields: [locationId], references: [id])
+  shifts          Shift[] // Shifts generated from this pattern
   userAssignments RecurringUserAssignment[] // Default users for this pattern
 
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([locationId])
   @@index([isActive])
@@ -227,16 +250,16 @@ model RecurringShiftPattern {
 
 // Default user assignments for recurring patterns
 model RecurringUserAssignment {
-  id                    String                @id @default(cuid())
-  recurringPatternId    String
-  userId                String
-  role                  String?               // Optional: "PRIMARY", "BACKUP", etc.
+  id                 String  @id @default(cuid())
+  recurringPatternId String
+  userId             String
+  role               String? // Optional: "PRIMARY", "BACKUP", etc.
 
-  recurringPattern      RecurringShiftPattern @relation(fields: [recurringPatternId], references: [id], onDelete: Cascade)
-  user                  User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  recurringPattern RecurringShiftPattern @relation(fields: [recurringPatternId], references: [id], onDelete: Cascade)
+  user             User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  createdAt             DateTime              @default(now())
-  updatedAt             DateTime              @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@unique([recurringPatternId, userId])
   @@index([recurringPatternId])
@@ -244,40 +267,42 @@ model RecurringUserAssignment {
 }
 
 model Log {
-  id            String       @id @default(cuid())
-  type          LogType
-  title         String
-  description   String       @db.Text
-  status        RecordStatus @default(LIVE)
+  id          String       @id @default(cuid())
+  type        LogType
+  title       String
+  description String       @db.Text
+  status      RecordStatus @default(LIVE)
 
-  locationId    String
-  shiftId       String?
-  userId        String
+  locationId String
+  shiftId    String?
+  userId     String
 
   // Incident Report Specific Fields
-  severity           IncidentSeverity?
-  incidentTime       DateTime?         // Actual time of incident (vs createdAt = when reported)
-  peopleInvolved     String?           @db.Text  // Names, descriptions
-  witnesses          String?           @db.Text  // Witness information
-  actionsTaken       String?           @db.Text  // What the guard did
-  followUpRequired   Boolean?          @default(false)
-  followUpNotes      String?           @db.Text
-  weatherConditions  String?
-  photoUrls          String?           @db.Text  // JSON array of photo URLs
-  videoUrls          String?           @db.Text  // JSON array of video URLs
-  reviewedBy         String?           // Supervisor who reviewed (for incidents)
-  reviewedAt         DateTime?         // When reviewed
-  reviewNotes        String?           @db.Text  // Supervisor notes
+  severity          IncidentSeverity?
+  incidentTime      DateTime? // Actual time of incident (vs createdAt = when reported)
+  peopleInvolved    String?           @db.Text // Names, descriptions
+  witnesses         String?           @db.Text // Witness information
+  actionsTaken      String?           @db.Text // What the guard did
+  followUpRequired  Boolean?          @default(false)
+  followUpNotes     String?           @db.Text
+  weatherConditions String?
+  photoUrls         String?           @db.Text // JSON array of photo URLs
+  videoUrls         String?           @db.Text // JSON array of video URLs
+  reviewedBy        String? // Supervisor who reviewed (for incidents)
+  reviewedAt        DateTime? // When reviewed
+  reviewNotes       String?           @db.Text // Supervisor notes
 
   location                Location                 @relation(fields: [locationId], references: [id])
   shift                   Shift?                   @relation(fields: [shiftId], references: [id])
   user                    User                     @relation(fields: [userId], references: [id])
   reviewer                User?                    @relation("ReviewedLogs", fields: [reviewedBy], references: [id])
   safetyChecklistResponse SafetyChecklistResponse?
+  incidentReport          IncidentReport?
+  logEdits                LogEdit[]
 
-  createdAt     DateTime     @default(now())
-  updatedAt     DateTime     @updatedAt
-  archivedAt    DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  archivedAt DateTime?
 
   @@index([locationId])
   @@index([shiftId])
@@ -290,26 +315,27 @@ model Log {
 }
 
 model DutySession {
-  id          String    @id @default(cuid())
-  userId      String
-  locationId  String?   // Null for supervisors (roaming duty)
-  shiftId     String?   // Optional link to scheduled shift
+  id         String  @id @default(cuid())
+  userId     String
+  locationId String? // Null for supervisors (roaming duty)
+  shiftId    String? // Optional link to scheduled shift
 
-  clockInTime  DateTime @default(now())
+  clockInTime  DateTime  @default(now())
   clockOutTime DateTime? // Null = still on duty
 
-  notes       String?   @db.Text // End of shift notes
+  notes String? @db.Text // End of shift notes
 
-  user        User      @relation(fields: [userId], references: [id])
-  location    Location? @relation(fields: [locationId], references: [id])
-  shift       Shift?    @relation(fields: [shiftId], references: [id])
+  user     User      @relation(fields: [userId], references: [id])
+  location Location? @relation(fields: [locationId], references: [id])
+  shift    Shift?    @relation(fields: [shiftId], references: [id])
 
   // Supervisor location check-ins during this duty session
   locationCheckIns         LocationCheckIn[]
   safetyChecklistResponses SafetyChecklistResponse[]
+  timesheetEntries         TimesheetEntry[]
 
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([userId])
   @@index([locationId])
@@ -318,20 +344,20 @@ model DutySession {
 }
 
 model LocationCheckIn {
-  id             String       @id @default(cuid())
-  dutySessionId  String       // Link to supervisor's duty session
-  locationId     String
-  userId         String       // Supervisor who checked in
+  id            String @id @default(cuid())
+  dutySessionId String // Link to supervisor's duty session
+  locationId    String
+  userId        String // Supervisor who checked in
 
-  checkInTime    DateTime     @default(now())
-  notes          String?      @db.Text // Observations at this location
+  checkInTime DateTime @default(now())
+  notes       String?  @db.Text // Observations at this location
 
-  dutySession    DutySession  @relation(fields: [dutySessionId], references: [id], onDelete: Cascade)
-  location       Location     @relation(fields: [locationId], references: [id])
-  user           User         @relation(fields: [userId], references: [id])
+  dutySession DutySession @relation(fields: [dutySessionId], references: [id], onDelete: Cascade)
+  location    Location    @relation(fields: [locationId], references: [id])
+  user        User        @relation(fields: [userId], references: [id])
 
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([dutySessionId])
   @@index([locationId])
@@ -341,23 +367,23 @@ model LocationCheckIn {
 
 // Global notification banner system
 model Notification {
-  id          String               @id @default(cuid())
-  userId      String?              // If null, notification is global for all users
-  user        User?                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id     String  @id @default(cuid())
+  userId String? // If null, notification is global for all users
+  user   User?   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  type        NotificationType     @default(INFO)
-  priority    NotificationPriority @default(MEDIUM)
-  title       String
-  message     String               @db.Text
+  type     NotificationType     @default(INFO)
+  priority NotificationPriority @default(MEDIUM)
+  title    String
+  message  String               @db.Text
 
   actionLabel String?
   actionUrl   String?
 
-  dismissible Boolean              @default(true)
-  dismissedAt DateTime?            // When user dismissed it
+  dismissible Boolean   @default(true)
+  dismissedAt DateTime? // When user dismissed it
 
-  createdAt   DateTime             @default(now())
-  updatedAt   DateTime             @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([userId])
   @@index([dismissedAt])
@@ -375,21 +401,21 @@ model Asset {
   description String?     @db.Text
 
   // Asset details
-  make        String?
-  model       String?
-  year        Int?
-  serialNumber String?    @unique
+  make               String?
+  model              String?
+  year               Int?
+  serialNumber       String? @unique
   registrationNumber String?
 
   // Location tracking
-  locationId  String?
-  location    Location?   @relation(fields: [locationId], references: [id])
+  locationId String?
+  location   Location? @relation(fields: [locationId], references: [id])
 
   // Ownership/Assignment
-  assignedTo  String?     // User ID if assigned to a person
+  assignedTo String? // User ID if assigned to a person
 
   // Value and insurance
-  purchaseDate DateTime?
+  purchaseDate  DateTime?
   purchasePrice Decimal?  @db.Decimal(10, 2)
   insuranceInfo String?   @db.Text
 
@@ -398,8 +424,8 @@ model Asset {
   nextMaintenanceDate DateTime?
   maintenanceNotes    String?   @db.Text
 
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([locationId])
   @@index([type])
@@ -409,38 +435,38 @@ model Asset {
 
 // Visitor tracking
 model Visitor {
-  id            String    @id @default(cuid())
-  firstName     String
-  lastName      String
-  email         String?
-  phone         String?
-  company       String?
-  purpose       String?   @db.Text
+  id        String  @id @default(cuid())
+  firstName String
+  lastName  String
+  email     String?
+  phone     String?
+  company   String?
+  purpose   String? @db.Text
 
   // Visit details
-  locationId    String
-  location      Location  @relation(fields: [locationId], references: [id])
+  locationId String
+  location   Location @relation(fields: [locationId], references: [id])
 
-  checkInTime   DateTime  @default(now())
-  checkOutTime  DateTime?
-  expectedDuration Int?    // Minutes
+  checkInTime      DateTime  @default(now())
+  checkOutTime     DateTime?
+  expectedDuration Int? // Minutes
 
   // Logged by
-  checkedInBy   String
-  checkedOutBy  String?
+  checkedInBy  String
+  checkedOutBy String?
 
   // Vehicle info
-  vehicleMake   String?
-  vehicleModel  String?
-  licensePlate  String?
+  vehicleMake  String?
+  vehicleModel String?
+  licensePlate String?
 
   // Badge/Pass
-  badgeNumber   String?
+  badgeNumber String?
 
-  notes         String?   @db.Text
+  notes String? @db.Text
 
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([locationId])
   @@index([checkInTime])
@@ -450,29 +476,29 @@ model Visitor {
 
 // Security equipment check-out system
 model Equipment {
-  id              String          @id @default(cuid())
-  name            String
-  description     String?
-  serialNumber    String?         @unique
-  status          EquipmentStatus @default(AVAILABLE)
+  id           String          @id @default(cuid())
+  name         String
+  description  String?
+  serialNumber String?         @unique
+  status       EquipmentStatus @default(AVAILABLE)
 
   // Location
-  locationId      String?
-  location        Location?       @relation(fields: [locationId], references: [id])
+  locationId String?
+  location   Location? @relation(fields: [locationId], references: [id])
 
   // Current checkout (if any)
-  checkedOutTo    String?         // User ID
-  checkedOutAt    DateTime?
+  checkedOutTo     String? // User ID
+  checkedOutAt     DateTime?
   expectedReturnAt DateTime?
 
   // Maintenance
   lastMaintenance DateTime?
   nextMaintenance DateTime?
 
-  notes           String?         @db.Text
+  notes String? @db.Text
 
-  createdAt       DateTime        @default(now())
-  updatedAt       DateTime        @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([locationId])
   @@index([status])
@@ -481,38 +507,38 @@ model Equipment {
 
 // Maintenance request tracking
 model MaintenanceRequest {
-  id            String              @id @default(cuid())
-  title         String
-  description   String              @db.Text
-  priority      MaintenancePriority @default(MEDIUM)
-  status        MaintenanceStatus   @default(PENDING)
+  id          String              @id @default(cuid())
+  title       String
+  description String              @db.Text
+  priority    MaintenancePriority @default(MEDIUM)
+  status      MaintenanceStatus   @default(PENDING)
 
   // Location
-  locationId    String
-  location      Location            @relation(fields: [locationId], references: [id])
+  locationId String
+  location   Location @relation(fields: [locationId], references: [id])
 
   // Reported by
-  reportedBy    String              // User ID
-  reportedAt    DateTime            @default(now())
+  reportedBy String // User ID
+  reportedAt DateTime @default(now())
 
   // Assignment
-  assignedTo    String?             // User ID or maintenance team
-  assignedAt    DateTime?
+  assignedTo String? // User ID or maintenance team
+  assignedAt DateTime?
 
   // Completion
-  completedBy   String?
-  completedAt   DateTime?
-  resolution    String?             @db.Text
+  completedBy String?
+  completedAt DateTime?
+  resolution  String?   @db.Text
 
   // Cost tracking
-  estimatedCost Decimal?            @db.Decimal(10, 2)
-  actualCost    Decimal?            @db.Decimal(10, 2)
+  estimatedCost Decimal? @db.Decimal(10, 2)
+  actualCost    Decimal? @db.Decimal(10, 2)
 
   // Photos
-  photoUrls     String?             @db.Text  // JSON array
+  photoUrls String? @db.Text // JSON array
 
-  createdAt     DateTime            @default(now())
-  updatedAt     DateTime            @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([locationId])
   @@index([status])
@@ -523,31 +549,31 @@ model MaintenanceRequest {
 
 // System alerts for guards
 model Alert {
-  id          String        @id @default(cuid())
-  title       String
-  message     String        @db.Text
-  priority    AlertPriority @default(INFO)
+  id       String        @id @default(cuid())
+  title    String
+  message  String        @db.Text
+  priority AlertPriority @default(INFO)
 
   // Targeting
-  locationId  String?       // Null = all locations
-  location    Location?     @relation(fields: [locationId], references: [id])
+  locationId String? // Null = all locations
+  location   Location? @relation(fields: [locationId], references: [id])
 
-  targetRole  Role?         // Null = all roles, or specific role
+  targetRole Role? // Null = all roles, or specific role
 
   // Validity period
-  activeFrom  DateTime      @default(now())
+  activeFrom  DateTime  @default(now())
   activeUntil DateTime?
 
   // Acknowledgment tracking
-  acknowledgedBy String?     @db.Text  // JSON array of user IDs
+  acknowledgedBy String? @db.Text // JSON array of user IDs
 
   // Created by
-  createdBy   String        // User ID (admin/supervisor)
+  createdBy String // User ID (admin/supervisor)
 
-  isActive    Boolean       @default(true)
+  isActive Boolean @default(true)
 
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([locationId])
   @@index([priority])
@@ -557,17 +583,17 @@ model Alert {
 
 // Safety Equipment Checklist - Master list of items to check
 model SafetyChecklistItem {
-  id          String   @id @default(cuid())
-  name        String   @unique
-  description String?  @db.Text
-  order       Int      @default(0) // Display order
-  isActive    Boolean  @default(true)
+  id          String  @id @default(cuid())
+  name        String  @unique
+  description String? @db.Text
+  order       Int     @default(0) // Display order
+  isActive    Boolean @default(true)
 
   // Relation to individual checks
-  checks      SafetyChecklistItemCheck[]
+  checks SafetyChecklistItemCheck[]
 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([isActive])
   @@index([order])
@@ -575,23 +601,23 @@ model SafetyChecklistItem {
 
 // Safety Checklist Response - Completed checklist by a guard
 model SafetyChecklistResponse {
-  id             String    @id @default(cuid())
-  dutySessionId  String    // Which duty session this checklist is for
-  userId         String    // Guard who completed it
-  locationId     String    // Location where checklist was completed
-  logId          String?   @unique // Link to auto-created log entry
+  id            String  @id @default(cuid())
+  dutySessionId String // Which duty session this checklist is for
+  userId        String // Guard who completed it
+  locationId    String // Location where checklist was completed
+  logId         String? @unique // Link to auto-created log entry
 
-  completedAt    DateTime  @default(now())
+  completedAt DateTime @default(now())
 
   // Relations
-  dutySession    DutySession @relation(fields: [dutySessionId], references: [id], onDelete: Cascade)
-  user           User        @relation(fields: [userId], references: [id])
-  location       Location    @relation(fields: [locationId], references: [id])
-  log            Log?        @relation(fields: [logId], references: [id])
-  itemChecks     SafetyChecklistItemCheck[]
+  dutySession DutySession                @relation(fields: [dutySessionId], references: [id], onDelete: Cascade)
+  user        User                       @relation(fields: [userId], references: [id])
+  location    Location                   @relation(fields: [locationId], references: [id])
+  log         Log?                       @relation(fields: [logId], references: [id])
+  itemChecks  SafetyChecklistItemCheck[]
 
-  createdAt      DateTime    @default(now())
-  updatedAt      DateTime    @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([dutySessionId])
   @@index([userId])
@@ -601,21 +627,275 @@ model SafetyChecklistResponse {
 
 // Individual item check within a checklist response
 model SafetyChecklistItemCheck {
-  id                        String   @id @default(cuid())
+  id                        String @id @default(cuid())
   safetyChecklistResponseId String
   safetyChecklistItemId     String
 
-  checked                   Boolean  @default(false)
-  notes                     String?  @db.Text // Optional notes if issue found
+  checked Boolean @default(false)
+  notes   String? @db.Text // Optional notes if issue found
 
   // Relations
-  response                  SafetyChecklistResponse @relation(fields: [safetyChecklistResponseId], references: [id], onDelete: Cascade)
-  item                      SafetyChecklistItem     @relation(fields: [safetyChecklistItemId], references: [id])
+  response SafetyChecklistResponse @relation(fields: [safetyChecklistResponseId], references: [id], onDelete: Cascade)
+  item     SafetyChecklistItem     @relation(fields: [safetyChecklistItemId], references: [id])
 
-  createdAt                 DateTime @default(now())
-  updatedAt                 DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@unique([safetyChecklistResponseId, safetyChecklistItemId])
   @@index([safetyChecklistResponseId])
   @@index([safetyChecklistItemId])
+}
+
+// ============================================================================
+// TIMESHEETS MANAGEMENT MODELS
+// ============================================================================
+
+enum TimesheetStatus {
+  DRAFT // Generated but not submitted
+  PENDING // Submitted, awaiting supervisor approval
+  APPROVED // Approved by supervisor
+  REJECTED // Rejected, needs revision
+}
+
+enum TimesheetAdjustmentType {
+  HOURS_EDITED // Supervisor manually edited hours
+  TIME_EDITED // Supervisor edited clock in/out times
+  ENTRY_ADDED // Supervisor manually added entry not from duty session
+  ENTRY_REMOVED // Supervisor removed an entry
+  NOTE_ADDED // General note/clarification
+}
+
+// Main timesheet model - one per user per week
+model Timesheet {
+  id     String @id @default(cuid())
+  userId String // Guard whose timesheet this is
+
+  // Week boundaries (Sunday to Saturday)
+  weekStartDate DateTime // Sunday 00:00:00
+  weekEndDate   DateTime // Saturday 23:59:59
+
+  // Calculated totals (denormalized for performance)
+  totalHours   Decimal @db.Decimal(6, 2) // e.g., 42.50
+  totalEntries Int     @default(0) // Number of duty entries
+
+  // Status and workflow
+  status TimesheetStatus @default(DRAFT)
+
+  // Approval workflow
+  submittedAt     DateTime? // When submitted for approval
+  submittedBy     String? // User ID who submitted (often supervisor)
+  approvedBy      String? // Supervisor/Admin who approved
+  approvedAt      DateTime? // Approval timestamp
+  rejectedBy      String? // Supervisor who rejected
+  rejectedAt      DateTime? // Rejection timestamp
+  rejectionReason String?   @db.Text
+
+  // Audit trail
+  createdBy String // Supervisor who generated this timesheet
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  user      User  @relation(fields: [userId], references: [id])
+  creator   User  @relation("CreatedTimesheets", fields: [createdBy], references: [id])
+  approver  User? @relation("ApprovedTimesheets", fields: [approvedBy], references: [id])
+  rejector  User? @relation("RejectedTimesheets", fields: [rejectedBy], references: [id])
+  submitter User? @relation("SubmittedTimesheets", fields: [submittedBy], references: [id])
+
+  entries     TimesheetEntry[]
+  adjustments TimesheetAdjustment[]
+
+  @@unique([userId, weekStartDate]) // One timesheet per user per week
+  @@index([userId])
+  @@index([weekStartDate, weekEndDate])
+  @@index([status])
+  @@index([createdBy])
+  @@index([approvedBy])
+}
+
+// Individual duty entries within a timesheet
+model TimesheetEntry {
+  id            String  @id @default(cuid())
+  timesheetId   String
+  dutySessionId String? // Link to original duty session (null if manually added)
+
+  // Work period
+  date         DateTime // Date of this entry (for display/grouping)
+  clockInTime  DateTime // Adjusted clock in time
+  clockOutTime DateTime // Adjusted clock out time
+
+  // Calculated hours (denormalized)
+  hoursWorked Decimal @db.Decimal(5, 2) // e.g., 8.50
+
+  // Context
+  locationId String?
+  shiftId    String?
+
+  // Original values (for audit comparison)
+  originalClockIn  DateTime? // Original from duty session
+  originalClockOut DateTime? // Original from duty session
+  originalHours    Decimal?  @db.Decimal(5, 2)
+
+  // Flags
+  wasAdjusted      Boolean @default(false)
+  wasManuallyAdded Boolean @default(false)
+
+  notes String? @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  timesheet   Timesheet    @relation(fields: [timesheetId], references: [id], onDelete: Cascade)
+  dutySession DutySession? @relation(fields: [dutySessionId], references: [id])
+  location    Location?    @relation(fields: [locationId], references: [id])
+  shift       Shift?       @relation(fields: [shiftId], references: [id])
+
+  @@index([timesheetId])
+  @@index([dutySessionId])
+  @@index([date])
+}
+
+// Audit trail for all timesheet modifications
+model TimesheetAdjustment {
+  id          String  @id @default(cuid())
+  timesheetId String
+  entryId     String? // Specific entry if applicable
+
+  type TimesheetAdjustmentType
+
+  // What changed
+  fieldChanged String? // e.g., "clockInTime", "clockOutTime", "hoursWorked"
+  oldValue     String? // JSON string of old value
+  newValue     String? // JSON string of new value
+
+  // Why it changed
+  reason String @db.Text // Required supervisor note
+
+  // Who and when
+  adjustedBy String
+  adjustedAt DateTime @default(now())
+
+  // Relations
+  timesheet Timesheet @relation(fields: [timesheetId], references: [id], onDelete: Cascade)
+  adjuster  User      @relation(fields: [adjustedBy], references: [id])
+
+  createdAt DateTime @default(now())
+
+  @@index([timesheetId])
+  @@index([adjustedBy])
+  @@index([adjustedAt])
+}
+
+// ============================================================================
+// INCIDENT REPORTING MODELS
+// ============================================================================
+
+enum IncidentReportStatus {
+  DRAFT // Created but not submitted
+  UNDER_REVIEW // Submitted by guard, under supervisor review
+  SUPERVISOR_APPROVED // Supervisor approved, pending admin/authority approval
+  APPROVED // Admin approved, ready to submit
+  SUBMITTED // Submitted to authorities
+  CLOSED // Case closed
+}
+
+// Formal incident reports for authorities (separate from casual incident logs)
+model IncidentReport {
+  id    String @id @default(cuid())
+  logId String @unique // Links to source Log entry
+
+  // Report metadata
+  reportNumber String @unique // Auto-generated: IR-YYYY-MM-NNNN
+  title        String
+  summary      String @db.Text
+
+  // Incident details (copied from log + enhanced)
+  incidentTime     DateTime
+  incidentLocation String
+  locationId       String
+  severity         IncidentSeverity
+
+  // People involved
+  peopleInvolved String? @db.Text
+  witnesses      String? @db.Text
+
+  // Actions and follow-up
+  actionsTaken       String? @db.Text
+  recommendedActions String? @db.Text
+  followUpRequired   Boolean @default(false)
+  followUpNotes      String? @db.Text
+
+  // Environmental context
+  weatherConditions String?
+
+  // Media evidence
+  photoUrls      String? @db.Text // JSON array
+  videoUrls      String? @db.Text // JSON array
+  attachmentUrls String? @db.Text // JSON array (PDFs, docs)
+
+  // Workflow
+  status IncidentReportStatus @default(DRAFT)
+
+  // Multi-step approval
+  submittedBy String? // Guard who created
+  submittedAt DateTime?
+
+  reviewedBy  String? // Supervisor
+  reviewedAt  DateTime?
+  reviewNotes String?   @db.Text
+
+  approvedBy    String? // Admin/Super Admin
+  approvedAt    DateTime?
+  approvalNotes String?   @db.Text
+
+  submittedToAuthority Boolean   @default(false)
+  authoritySubmittedAt DateTime?
+  authoritySubmittedBy String?
+  authorityName        String? // Which authority (Police, Coast Guard, etc.)
+  authorityRefNumber   String? // Their reference number
+
+  closedBy     String?
+  closedAt     DateTime?
+  closingNotes String?   @db.Text
+
+  // Audit
+  createdBy String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  log                Log      @relation(fields: [logId], references: [id])
+  location           Location @relation(fields: [locationId], references: [id])
+  creator            User     @relation("CreatedIncidentReports", fields: [createdBy], references: [id])
+  submitter          User?    @relation("SubmittedIncidentReports", fields: [submittedBy], references: [id])
+  reviewer           User?    @relation("ReviewedIncidentReports", fields: [reviewedBy], references: [id])
+  approver           User?    @relation("ApprovedIncidentReports", fields: [approvedBy], references: [id])
+  authoritySubmitter User?    @relation("AuthoritySubmittedReports", fields: [authoritySubmittedBy], references: [id])
+  closer             User?    @relation("ClosedIncidentReports", fields: [closedBy], references: [id])
+
+  @@index([logId])
+  @@index([locationId])
+  @@index([status])
+  @@index([severity])
+  @@index([reportNumber])
+  @@index([createdAt])
+}
+
+// Audit trail for log edits
+model LogEdit {
+  id           String   @id @default(cuid())
+  logId        String
+  editedBy     String
+  editedAt     DateTime @default(now())
+  fieldChanged String
+  oldValue     String?  @db.Text
+  newValue     String?  @db.Text
+  reason       String?  @db.Text
+
+  log    Log  @relation(fields: [logId], references: [id], onDelete: Cascade)
+  editor User @relation(fields: [editedBy], references: [id])
+
+  @@index([logId])
+  @@index([editedBy])
 }
