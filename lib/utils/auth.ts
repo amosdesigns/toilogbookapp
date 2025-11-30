@@ -73,3 +73,11 @@ export function canManageUsers(userRole: Role): boolean {
 export function canAccessAppSettings(userRole: Role): boolean {
   return userRole === 'SUPER_ADMIN'
 }
+
+/**
+ * Check if a user is an admin (ADMIN or SUPER_ADMIN)
+ * Helper function for admin-only features
+ */
+export function isAdmin(userRole: Role): boolean {
+  return hasRole(userRole, 'ADMIN')
+}
