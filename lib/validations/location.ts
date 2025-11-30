@@ -2,7 +2,7 @@ import { z } from 'zod'
 
 export const createLocationSchema = z.object({
   name: z.string().min(1, 'Location name is required').max(100, 'Name too long'),
-  description: z.string().max(500, 'Description too long').optional(),
+  description: z.string().max(500, 'Description too long').optional().nullable(),
   address: z.string().max(300, 'Address too long').optional(),
   maxCapacity: z.number().int().min(1, 'Max capacity must be at least 1').max(50, 'Max capacity too high').optional().nullable(),
   isActive: z.boolean().default(true),
