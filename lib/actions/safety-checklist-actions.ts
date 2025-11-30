@@ -443,7 +443,10 @@ export async function updateSafetyChecklistItem(
     // Check for duplicate name if name is being updated
     if (validation.data.name && validation.data.name !== existing.name) {
       const duplicate = await prisma.safetyChecklistItem.findFirst({
-        where: { name: validation.data.name, id: { not: id } },
+        where: { 
+          name: { equals: validation.data.name, mode: 'insensitive' }, 
+          id: { not: id } 
+        },
       })
 
       if (duplicate) {
