@@ -23,7 +23,6 @@ export const reorderSafetyChecklistItemsSchema = z.object({
   ),
 })
 
-<<<<<<< Updated upstream
 export const createMultipleSafetyChecklistItemsSchema = z.object({
   items: z
     .array(
@@ -37,18 +36,8 @@ export const createMultipleSafetyChecklistItemsSchema = z.object({
     .min(1, 'At least one item is required'),
 })
 
-// Fix type inference for default values in Zod v4
-export type CreateSafetyChecklistItemInput = Omit<
-  z.infer<typeof createSafetyChecklistItemSchema>,
-  'order' | 'isActive'
-> & {
-  order: number
-  isActive: boolean
-}
-=======
 // Type inference
 export type CreateSafetyChecklistItemInput = z.infer<typeof createSafetyChecklistItemSchema>
->>>>>>> Stashed changes
 export type UpdateSafetyChecklistItemInput = z.infer<typeof updateSafetyChecklistItemSchema>
 export type ReorderSafetyChecklistItemsInput = z.infer<typeof reorderSafetyChecklistItemsSchema>
 export type CreateMultipleSafetyChecklistItemsInput = {
