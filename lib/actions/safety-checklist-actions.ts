@@ -8,9 +8,11 @@ import {
   createSafetyChecklistItemSchema,
   updateSafetyChecklistItemSchema,
   reorderSafetyChecklistItemsSchema,
+  createMultipleSafetyChecklistItemsSchema,
   type CreateSafetyChecklistItemInput,
   type UpdateSafetyChecklistItemInput,
   type ReorderSafetyChecklistItemsInput,
+  type CreateMultipleSafetyChecklistItemsInput,
 } from '@/lib/validations/safety-checklist'
 import { isAdmin } from '@/lib/utils/auth'
 
@@ -306,6 +308,98 @@ export async function createSafetyChecklistItem(
     }
   } catch (error) {
     console.error('Error creating safety checklist item:', error)
+    return to(error)
+  }
+}
+
+/**
+ * Create multiple safety checklist items in batch - Admin only
+ * Uses a single transaction for better performance
+ */
+export async function createMultipleSafetyChecklistItems(
+  input: CreateMultipleSafetyChecklistItemsInput
+): Promise<Result<{ created: number; skipped: string[] }>> {
+  try {
+    const user = await getCurrentUser()
+    if (!user) {
+      return { ok: false, message: 'Unauthorized' }
+    }
+
+    if (!isAdmin(user.role)) {
+      return { ok: false, message: 'Admin access required' }
+    }
+
+    // Validate input
+    const validation = createMultipleSafetyChecklistItemsSchema.safeParse(input)
+    if (!validation.success) {
+      return {
+        ok: false,
+        message: 'Invalid input',
+        meta: { errors: validation.error.flatten() },
+      }
+    }
+
+    const itemsToCreate = validation.data.items
+
+    // Check for duplicates in a single query
+    const existingItems = await prisma.safetyChecklistItem.findMany({
+      where: {
+        name: { in: itemsToCreate.map((item) => item.name) },
+      },
+      select: { name: true },
+    })
+
+    const existingNames = new Set(existingItems.map((item: { name: string }) => item.name.toLowerCase()))
+    const skipped: string[] = []
+    const uniqueItems = itemsToCreate.filter((item) => {
+      if (existingNames.has(item.name.toLowerCase())) {
+        skipped.push(item.name)
+        return false
+      }
+      return true
+    })
+
+    if (uniqueItems.length === 0) {
+      return {
+        ok: false,
+        message: 'All items already exist',
+        meta: { skipped },
+      }
+    }
+
+    // Get max order for new items
+    const maxOrderItem = await prisma.safetyChecklistItem.findFirst({
+      orderBy: { order: 'desc' },
+      select: { order: true },
+    })
+    let nextOrder = maxOrderItem ? maxOrderItem.order + 1 : 0
+
+    // Assign orders to items that have order 0 (default)
+    const itemsWithOrders = uniqueItems.map((item) => ({
+      name: item.name,
+      description: item.description || null,
+      order: item.order === 0 ? nextOrder++ : item.order,
+      isActive: item.isActive ?? true,
+    }))
+
+    // Create all items in a single transaction using createMany
+    await prisma.safetyChecklistItem.createMany({
+      data: itemsWithOrders,
+    })
+
+    revalidatePath('/admin/dashboard/settings')
+    revalidatePath('/')
+
+    return {
+      ok: true,
+      data: { created: uniqueItems.length, skipped },
+      message:
+        skipped.length > 0
+          ? `Created ${uniqueItems.length} items, ${skipped.length} skipped (already exist)`
+          : `Successfully created ${uniqueItems.length} checklist items`,
+    }
+  } catch (error) {
+    console.error('Error creating multiple safety checklist items:', error)
     return to(error)
   }
 }
