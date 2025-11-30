@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { LogFilters, type LogFilters as LogFiltersType } from "@/components/logs/log-filters"
+import { LogFiltersHorizontal, type LogFilters as LogFiltersType } from "@/components/logs/log-filters-horizontal"
 import { LogsTable } from "@/components/logs/logs-table"
 import { LogDetailDialog } from "@/components/logs/log-detail-dialog"
 import { getLogs, getLogById, deleteLog } from "@/lib/actions/logs"
@@ -132,43 +132,36 @@ export function LogManagementClient({ user, locations }: LogManagementClientProp
         </div>
       </div>
 
-      {/* Main Content */}
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        {/* Filters Sidebar */}
-        <div className="lg:col-span-1">
-          <LogFilters
-            filters={filters}
-            onFiltersChange={setFilters}
-            locations={locations}
+      {/* Filters - Horizontal at top */}
+      <LogFiltersHorizontal
+        filters={filters}
+        onFiltersChange={setFilters}
+        locations={locations}
+      />
+
+      {/* Logs Table */}
+      <Card className="p-4">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <p className="text-sm text-muted-foreground">
+              {isLoading ? "Loading..." : `${logs.length} log(s) found`}
+            </p>
+          </div>
+        </div>
+
+        {isLoading ? (
+          <div className="flex items-center justify-center py-12">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+          </div>
+        ) : (
+          <LogsTable
+            logs={logs}
+            onViewLog={handleViewLog}
+            onEditLog={handleEditLog}
+            onArchiveLog={handleArchiveLog}
           />
-        </div>
-
-        {/* Logs Table */}
-        <div className="lg:col-span-3 space-y-4">
-          <Card className="p-4">
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <p className="text-sm text-muted-foreground">
-                  {isLoading ? "Loading..." : `${logs.length} log(s) found`}
-                </p>
-              </div>
-            </div>
-
-            {isLoading ? (
-              <div className="flex items-center justify-center py-12">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
-              </div>
-            ) : (
-              <LogsTable
-                logs={logs}
-                onViewLog={handleViewLog}
-                onEditLog={handleEditLog}
-                onArchiveLog={handleArchiveLog}
-              />
-            )}
-          </Card>
-        </div>
-      </div>
+        )}
+      </Card>
 
       {/* Log Detail Dialog */}
       <LogDetailDialog
