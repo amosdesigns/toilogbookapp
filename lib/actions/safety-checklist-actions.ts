@@ -4,12 +4,26 @@ import { prisma } from '@/lib/prisma'
 import { getCurrentUser } from '@/lib/auth/sync-user'
 import { revalidatePath } from 'next/cache'
 import { to, type Result } from '@/lib/utils/RenderError'
+import {
+  createSafetyChecklistItemSchema,
+  updateSafetyChecklistItemSchema,
+  reorderSafetyChecklistItemsSchema,
+  createMultipleSafetyChecklistItemsSchema,
+  type CreateSafetyChecklistItemInput,
+  type UpdateSafetyChecklistItemInput,
+  type ReorderSafetyChecklistItemsInput,
+  type CreateMultipleSafetyChecklistItemsInput,
+} from '@/lib/validations/safety-checklist'
+import { isAdmin } from '@/lib/utils/auth'
 
 export interface SafetyChecklistItem {
   id: string
   name: string
   description: string | null
   order: number
+  isActive?: boolean
+  createdAt?: Date
+  updatedAt?: Date
 }
 
 export interface ChecklistItemData {
@@ -177,6 +191,383 @@ export async function submitSafetyChecklist(
     }
   } catch (error) {
     console.error('Error submitting safety checklist:', error)
+    return to(error)
+  }
+}
+
+// ============================================================================
+// ADMIN MANAGEMENT ACTIONS
+// ============================================================================
+
+/**
+ * Get all safety checklist items (including inactive) - Admin only
+ */
+export async function getAllSafetyChecklistItems(): Promise<Result<SafetyChecklistItem[]>> {
+  try {
+    const user = await getCurrentUser()
+    if (!user) {
+      return { ok: false, message: 'Unauthorized' }
+    }
+
+    if (!isAdmin(user.role)) {
+      return { ok: false, message: 'Admin access required' }
+    }
+
+    const items = await prisma.safetyChecklistItem.findMany({
+      orderBy: {
+        order: 'asc',
+      },
+      select: {
+        id: true,
+        name: true,
+        description: true,
+        order: true,
+        isActive: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    })
+
+    return {
+      ok: true,
+      data: items,
+    }
+  } catch (error) {
+    console.error('Error fetching all safety checklist items:', error)
+    return to(error)
+  }
+}
+
+/**
+ * Create a new safety checklist item - Admin only
+ */
+export async function createSafetyChecklistItem(
+  input: CreateSafetyChecklistItemInput
+): Promise<Result<SafetyChecklistItem>> {
+  try {
+    const user = await getCurrentUser()
+    if (!user) {
+      return { ok: false, message: 'Unauthorized' }
+    }
+
+    if (!isAdmin(user.role)) {
+      return { ok: false, message: 'Admin access required' }
+    }
+
+    // Validate input
+    const validation = createSafetyChecklistItemSchema.safeParse(input)
+    if (!validation.success) {
+      return {
+        ok: false,
+        message: 'Invalid input',
+        meta: { errors: validation.error.flatten() },
+      }
+    }
+
+    // Check for duplicate name
+    const existing = await prisma.safetyChecklistItem.findFirst({
+      where: { name: { equals: validation.data.name, mode: 'insensitive' } },
+    })
+
+    if (existing) {
+      return { ok: false, message: 'A checklist item with this name already exists' }
+    }
+
+    // If no order specified, put at end
+    let order = validation.data.order
+    if (order === 0) {
+      const maxOrder = await prisma.safetyChecklistItem.findFirst({
+        orderBy: { order: 'desc' },
+        select: { order: true },
+      })
+      order = maxOrder ? maxOrder.order + 1 : 0
+    }
+
+    const item = await prisma.safetyChecklistItem.create({
+      data: {
+        name: validation.data.name,
+        description: validation.data.description || null,
+        order,
+        isActive: validation.data.isActive,
+      },
+      select: {
+        id: true,
+        name: true,
+        description: true,
+        order: true,
+      },
+    })
+
+    revalidatePath('/admin/dashboard/settings')
+    revalidatePath('/')
+
+    return {
+      ok: true,
+      data: item,
+      message: 'Checklist item created successfully',
+    }
+  } catch (error) {
+    console.error('Error creating safety checklist item:', error)
+    return to(error)
+  }
+}
+
+/**
+ * Create multiple safety checklist items in batch - Admin only
+ * Uses a single transaction for better performance
+ */
+export async function createMultipleSafetyChecklistItems(
+  input: CreateMultipleSafetyChecklistItemsInput
+): Promise<Result<{ created: number; skipped: string[] }>> {
+  try {
+    const user = await getCurrentUser()
+    if (!user) {
+      return { ok: false, message: 'Unauthorized' }
+    }
+
+    if (!isAdmin(user.role)) {
+      return { ok: false, message: 'Admin access required' }
+    }
+
+    // Validate input
+    const validation = createMultipleSafetyChecklistItemsSchema.safeParse(input)
+    if (!validation.success) {
+      return {
+        ok: false,
+        message: 'Invalid input',
+        meta: { errors: validation.error.flatten() },
+      }
+    }
+
+    const itemsToCreate = validation.data.items
+
+    // Check for duplicates in a single query
+    const existingItems = await prisma.safetyChecklistItem.findMany({
+      where: {
+        name: { in: itemsToCreate.map((item) => item.name) },
+      },
+      select: { name: true },
+    })
+
+    const existingNames = new Set(existingItems.map((item: { name: string }) => item.name.toLowerCase()))
+    const skipped: string[] = []
+    const uniqueItems = itemsToCreate.filter((item) => {
+      if (existingNames.has(item.name.toLowerCase())) {
+        skipped.push(item.name)
+        return false
+      }
+      return true
+    })
+
+    if (uniqueItems.length === 0) {
+      return {
+        ok: false,
+        message: 'All items already exist',
+        meta: { skipped },
+      }
+    }
+
+    // Get max order for new items
+    const maxOrderItem = await prisma.safetyChecklistItem.findFirst({
+      orderBy: { order: 'desc' },
+      select: { order: true },
+    })
+    let nextOrder = maxOrderItem ? maxOrderItem.order + 1 : 0
+
+    // Assign orders to items that have order 0 (default)
+    const itemsWithOrders = uniqueItems.map((item) => ({
+      name: item.name,
+      description: item.description || null,
+      order: item.order === 0 ? nextOrder++ : item.order,
+      isActive: item.isActive ?? true,
+    }))
+
+    // Create all items in a single transaction using createMany
+    await prisma.safetyChecklistItem.createMany({
+      data: itemsWithOrders,
+    })
+
+    revalidatePath('/admin/dashboard/settings')
+    revalidatePath('/')
+
+    return {
+      ok: true,
+      data: { created: uniqueItems.length, skipped },
+      message:
+        skipped.length > 0
+          ? `Created ${uniqueItems.length} items, ${skipped.length} skipped (already exist)`
+          : `Successfully created ${uniqueItems.length} checklist items`,
+    }
+  } catch (error) {
+    console.error('Error creating multiple safety checklist items:', error)
+    return to(error)
+  }
+}
+
+/**
+ * Update a safety checklist item - Admin only
+ */
+export async function updateSafetyChecklistItem(
+  id: string,
+  input: UpdateSafetyChecklistItemInput
+): Promise<Result<SafetyChecklistItem>> {
+  try {
+    const user = await getCurrentUser()
+    if (!user) {
+      return { ok: false, message: 'Unauthorized' }
+    }
+
+    if (!isAdmin(user.role)) {
+      return { ok: false, message: 'Admin access required' }
+    }
+
+    // Validate input
+    const validation = updateSafetyChecklistItemSchema.safeParse(input)
+    if (!validation.success) {
+      return {
+        ok: false,
+        message: 'Invalid input',
+        meta: { errors: validation.error.flatten() },
+      }
+    }
+
+    // Check item exists
+    const existing = await prisma.safetyChecklistItem.findUnique({
+      where: { id },
+    })
+
+    if (!existing) {
+      return { ok: false, message: 'Checklist item not found' }
+    }
+
+    // Check for duplicate name if name is being updated
+    if (validation.data.name && validation.data.name !== existing.name) {
+      const duplicate = await prisma.safetyChecklistItem.findFirst({
+        where: { 
+          name: { equals: validation.data.name, mode: 'insensitive' }, 
+          id: { not: id } 
+        },
+      })
+
+      if (duplicate) {
+        return { ok: false, message: 'A checklist item with this name already exists' }
+      }
+    }
+
+    const item = await prisma.safetyChecklistItem.update({
+      where: { id },
+      data: validation.data,
+      select: {
+        id: true,
+        name: true,
+        description: true,
+        order: true,
+      },
+    })
+
+    revalidatePath('/admin/dashboard/settings')
+    revalidatePath('/')
+
+    return {
+      ok: true,
+      data: item,
+      message: 'Checklist item updated successfully',
+    }
+  } catch (error) {
+    console.error('Error updating safety checklist item:', error)
+    return to(error)
+  }
+}
+
+/**
+ * Delete (soft delete) a safety checklist item - Admin only
+ */
+export async function deleteSafetyChecklistItem(id: string): Promise<Result<void>> {
+  try {
+    const user = await getCurrentUser()
+    if (!user) {
+      return { ok: false, message: 'Unauthorized' }
+    }
+
+    if (!isAdmin(user.role)) {
+      return { ok: false, message: 'Admin access required' }
+    }
+
+    // Check item exists
+    const existing = await prisma.safetyChecklistItem.findUnique({
+      where: { id },
+    })
+
+    if (!existing) {
+      return { ok: false, message: 'Checklist item not found' }
+    }
+
+    // Soft delete by setting isActive to false
+    await prisma.safetyChecklistItem.update({
+      where: { id },
+      data: { isActive: false },
+    })
+
+    revalidatePath('/admin/dashboard/settings')
+    revalidatePath('/')
+
+    return {
+      ok: true,
+      data: undefined,
+      message: 'Checklist item deleted successfully',
+    }
+  } catch (error) {
+    console.error('Error deleting safety checklist item:', error)
+    return to(error)
+  }
+}
+
+/**
+ * Reorder safety checklist items - Admin only
+ */
+export async function reorderSafetyChecklistItems(
+  input: ReorderSafetyChecklistItemsInput
+): Promise<Result<void>> {
+  try {
+    const user = await getCurrentUser()
+    if (!user) {
+      return { ok: false, message: 'Unauthorized' }
+    }
+
+    if (!isAdmin(user.role)) {
+      return { ok: false, message: 'Admin access required' }
+    }
+
+    // Validate input
+    const validation = reorderSafetyChecklistItemsSchema.safeParse(input)
+    if (!validation.success) {
+      return {
+        ok: false,
+        message: 'Invalid input',
+        meta: { errors: validation.error.flatten() },
+      }
+    }
+
+    // Update all items in a transaction
+    await prisma.$transaction(
+      validation.data.items.map((item) =>
+        prisma.safetyChecklistItem.update({
+          where: { id: item.id },
+          data: { order: item.order },
+        })
+      )
+    )
+
+    revalidatePath('/admin/dashboard/settings')
+    revalidatePath('/')
+
+    return {
+      ok: true,
+      data: undefined,
+      message: 'Items reordered successfully',
+    }
+  } catch (error) {
+    console.error('Error reordering safety checklist items:', error)
     return to(error)
   }
 }
