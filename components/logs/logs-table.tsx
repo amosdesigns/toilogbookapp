@@ -11,8 +11,10 @@ import {
 } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Eye, Edit, Archive } from "lucide-react"
+import { Eye, Edit, Archive, ChevronLeft, ChevronRight } from "lucide-react"
 import { formatDateTime } from "@/lib/utils"
+
+const ITEMS_PER_PAGE = 25
 
 interface Log {
   id: string
@@ -63,6 +65,19 @@ const severityColors: Record<string, string> = {
 }
 
 export function LogsTable({ logs, onViewLog, onEditLog, onArchiveLog }: LogsTableProps) {
+  const [currentPage, setCurrentPage] = useState(1)
+
+  const totalPages = Math.ceil(logs.length / ITEMS_PER_PAGE)
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE
+  const endIndex = startIndex + ITEMS_PER_PAGE
+  const currentLogs = logs.slice(startIndex, endIndex)
+
+  // Reset to page 1 when logs change (e.g., filter applied)
+  const logsLength = logs.length
+  if (currentPage > totalPages && totalPages > 0) {
+    setCurrentPage(1)
+  }
+
   if (logs.length === 0) {
     return (
       <div className="text-center py-12 border rounded-lg">
@@ -72,21 +87,22 @@ export function LogsTable({ logs, onViewLog, onEditLog, onArchiveLog }: LogsTabl
   }
 
   return (
-    <div className="border rounded-lg">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Type</TableHead>
-            <TableHead>Title</TableHead>
-            <TableHead>Location</TableHead>
-            <TableHead>Created By</TableHead>
-            <TableHead>Date</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead className="text-right">Actions</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {logs.map((log) => (
+    <div className="space-y-4">
+      <div className="border rounded-lg">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Type</TableHead>
+              <TableHead>Title</TableHead>
+              <TableHead>Location</TableHead>
+              <TableHead>Created By</TableHead>
+              <TableHead>Date</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead className="text-right">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {currentLogs.map((log) => (
             <TableRow key={log.id}>
               <TableCell>
                 <div className="flex flex-col gap-1">
@@ -154,5 +170,38 @@ export function LogsTable({ logs, onViewLog, onEditLog, onArchiveLog }: LogsTabl
         </TableBody>
       </Table>
     </div>
+
+    {/* Pagination Controls */}
+    {totalPages > 1 && (
+      <div className="flex items-center justify-between px-2">
+        <div className="text-sm text-muted-foreground">
+          Showing {startIndex + 1} to {Math.min(endIndex, logs.length)} of {logs.length} logs
+        </div>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+            disabled={currentPage === 1}
+          >
+            <ChevronLeft className="h-4 w-4" />
+            Previous
+          </Button>
+          <div className="text-sm">
+            Page {currentPage} of {totalPages}
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
+            disabled={currentPage === totalPages}
+          >
+            Next
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+        </div>
+      </div>
+    )}
+  </div>
   )
 }
