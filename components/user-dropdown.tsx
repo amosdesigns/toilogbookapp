@@ -12,7 +12,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Button } from "@/components/ui/button"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import Link from "next/link"
 
 interface UserDropdownProps {
@@ -21,6 +21,7 @@ interface UserDropdownProps {
     lastName: string
     email: string
     role: string
+    imageUrl?: string | null
   }
 }
 
@@ -43,6 +44,7 @@ export function UserDropdown( { user }: UserDropdownProps ) {
     return (
       <Button variant="ghost" size="icon" className="rounded-full">
         <Avatar className="h-8 w-8">
+          {user.imageUrl && <AvatarImage src={user.imageUrl} alt={fullName} />}
           <AvatarFallback className="bg-primary text-primary-foreground">
             {initials}
           </AvatarFallback>
@@ -56,6 +58,7 @@ export function UserDropdown( { user }: UserDropdownProps ) {
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" size="icon" className="rounded-full">
           <Avatar className="h-8 w-8">
+            {user.imageUrl && <AvatarImage src={user.imageUrl} alt={fullName} />}
             <AvatarFallback className="bg-primary text-primary-foreground">
               {initials}
             </AvatarFallback>

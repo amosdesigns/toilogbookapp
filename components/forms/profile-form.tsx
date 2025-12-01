@@ -1,13 +1,14 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useRef } from "react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { updateProfileSchema, type UpdateProfileInput } from "@/lib/validations/user"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Loader2 } from "lucide-react"
+import { Loader2, Upload, X } from "lucide-react"
+import Image from "next/image"
 
 interface ProfileFormProps {
   onSubmit: (data: UpdateProfileInput) => Promise<void>
@@ -18,15 +19,54 @@ interface ProfileFormProps {
 
 export function ProfileForm({ onSubmit, defaultValues, lockedEmail, lockedUsername }: ProfileFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [imagePreview, setImagePreview] = useState<string | null>(defaultValues?.imageUrl || null)
+  const [imageFile, setImageFile] = useState<File | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const {
     register,
     handleSubmit,
     formState: { errors },
+    setValue,
   } = useForm<UpdateProfileInput>({
     resolver: zodResolver(updateProfileSchema),
     defaultValues,
   })
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        alert('Please select an image file')
+        return
+      }
+
+      // Validate file size (5MB max)
+      if (file.size > 5 * 1024 * 1024) {
+        alert('Image size must be less than 5MB')
+        return
+      }
+
+      setImageFile(file)
+      const reader = new FileReader()
+      reader.onloadend = () => {
+        const base64String = reader.result as string
+        setImagePreview(base64String)
+        setValue('imageUrl', base64String)
+      }
+      reader.readAsDataURL(file)
+    }
+  }
+
+  const handleRemoveImage = () => {
+    setImageFile(null)
+    setImagePreview(null)
+    setValue('imageUrl', '')
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ''
+    }
+  }
 
   const onSubmitHandler = async (data: UpdateProfileInput) => {
     setIsSubmitting(true)
@@ -39,20 +79,68 @@ export function ProfileForm({ onSubmit, defaultValues, lockedEmail, lockedUserna
 
   return (
     <form onSubmit={handleSubmit(onSubmitHandler)} className="space-y-6">
-      {/* Profile Image URL */}
-      <div className="space-y-2">
-        <Label htmlFor="imageUrl">Profile Photo URL</Label>
-        <Input
-          id="imageUrl"
-          {...register("imageUrl")}
-          placeholder="https://example.com/photo.jpg"
-        />
-        {errors.imageUrl && (
-          <p className="text-sm text-destructive">{errors.imageUrl.message}</p>
-        )}
-        <p className="text-xs text-muted-foreground">
-          Enter the URL of your profile photo
-        </p>
+      {/* Profile Photo Upload */}
+      <div className="space-y-4">
+        <Label>Profile Photo</Label>
+        <div className="flex items-start gap-6">
+          {/* Image Preview */}
+          <div className="relative">
+            <div className="h-32 w-32 rounded-full overflow-hidden bg-muted border-2 border-border">
+              {imagePreview ? (
+                <Image
+                  src={imagePreview}
+                  alt="Profile preview"
+                  width={128}
+                  height={128}
+                  className="object-cover w-full h-full"
+                />
+              ) : (
+                <div className="flex items-center justify-center h-full w-full bg-muted text-muted-foreground">
+                  <Upload className="h-8 w-8" />
+                </div>
+              )}
+            </div>
+            {imagePreview && (
+              <Button
+                type="button"
+                variant="destructive"
+                size="icon"
+                className="absolute -top-2 -right-2 h-8 w-8 rounded-full"
+                onClick={handleRemoveImage}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            )}
+          </div>
+
+          {/* Upload Controls */}
+          <div className="flex-1 space-y-2">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleImageChange}
+              className="hidden"
+              id="profile-photo-upload"
+            />
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => fileInputRef.current?.click()}
+            >
+              <Upload className="h-4 w-4 mr-2" />
+              {imagePreview ? 'Change Photo' : 'Upload Photo'}
+            </Button>
+            <p className="text-xs text-muted-foreground">
+              JPG, PNG or GIF. Max size 5MB.
+            </p>
+            {errors.imageUrl && (
+              <p className="text-sm text-destructive">{errors.imageUrl.message}</p>
+            )}
+          </div>
+        </div>
+        {/* Hidden input to store the image data */}
+        <input type="hidden" {...register("imageUrl")} />
       </div>
 
       {/* First Name */}

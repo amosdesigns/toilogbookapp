@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { Checkbox } from "@/components/ui/checkbox"
 import { Eye, Check, X, Trash2, Send, ChevronLeft, ChevronRight } from "lucide-react"
 import { formatDateTime } from "@/lib/utils"
 
@@ -62,6 +63,9 @@ interface TimesheetsTableProps {
   onApproveTimesheet?: (timesheetId: string) => void
   onRejectTimesheet?: (timesheetId: string) => void
   onDeleteTimesheet?: (timesheetId: string) => void
+  onBulkApprove?: (timesheetIds: string[]) => void
+  selectedIds?: string[]
+  onSelectionChange?: (ids: string[]) => void
 }
 
 const statusColors: Record<string, string> = {
@@ -78,6 +82,8 @@ export function TimesheetsTable({
   onApproveTimesheet,
   onRejectTimesheet,
   onDeleteTimesheet,
+  selectedIds = [],
+  onSelectionChange,
 }: TimesheetsTableProps) {
   const [currentPage, setCurrentPage] = useState(1)
 
@@ -105,12 +111,49 @@ export function TimesheetsTable({
     return `${startDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${endDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`
   }
 
+  // Get selectable (pending) timesheets on current page
+  const selectablePendingTimesheets = currentTimesheets.filter(t => t.status === 'PENDING')
+  const selectablePendingIds = selectablePendingTimesheets.map(t => t.id)
+  const allPagePendingSelected = selectablePendingIds.length > 0 && selectablePendingIds.every(id => selectedIds.includes(id))
+
+  const handleSelectAll = (checked: boolean) => {
+    if (!onSelectionChange) return
+    if (checked) {
+      // Add all pending IDs from current page
+      const newSelection = [...new Set([...selectedIds, ...selectablePendingIds])]
+      onSelectionChange(newSelection)
+    } else {
+      // Remove all pending IDs from current page
+      const newSelection = selectedIds.filter(id => !selectablePendingIds.includes(id))
+      onSelectionChange(newSelection)
+    }
+  }
+
+  const handleSelectOne = (id: string, checked: boolean) => {
+    if (!onSelectionChange) return
+    if (checked) {
+      onSelectionChange([...selectedIds, id])
+    } else {
+      onSelectionChange(selectedIds.filter(selectedId => selectedId !== id))
+    }
+  }
+
   return (
     <div className="space-y-4">
       <div className="border rounded-lg">
         <Table>
           <TableHeader>
             <TableRow>
+              {onSelectionChange && (
+                <TableHead className="w-12">
+                  <Checkbox
+                    checked={allPagePendingSelected}
+                    onCheckedChange={handleSelectAll}
+                    disabled={selectablePendingIds.length === 0}
+                    aria-label="Select all pending timesheets"
+                  />
+                </TableHead>
+              )}
               <TableHead>Employee</TableHead>
               <TableHead>Week Period</TableHead>
               <TableHead>Total Hours</TableHead>
@@ -123,6 +166,16 @@ export function TimesheetsTable({
           <TableBody>
             {currentTimesheets.map((timesheet) => (
               <TableRow key={timesheet.id}>
+                {onSelectionChange && (
+                  <TableCell>
+                    <Checkbox
+                      checked={selectedIds.includes(timesheet.id)}
+                      onCheckedChange={(checked) => handleSelectOne(timesheet.id, checked as boolean)}
+                      disabled={timesheet.status !== 'PENDING'}
+                      aria-label={`Select timesheet for ${timesheet.user.firstName} ${timesheet.user.lastName}`}
+                    />
+                  </TableCell>
+                )}
                 <TableCell>
                   <div>
                     <p className="font-medium">

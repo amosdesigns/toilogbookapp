@@ -69,6 +69,7 @@ export function LocationForm({
                   placeholder="Enter location description"
                   className="min-h-[100px]"
                   {...field}
+                  value={field.value ?? ''}
                 />
               </FormControl>
               <FormDescription>

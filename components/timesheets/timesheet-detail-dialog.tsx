@@ -8,6 +8,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import {
   Table,
@@ -18,7 +19,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { formatDateTime } from "@/lib/utils"
-import { Calendar, Clock, User, MapPin, AlertCircle } from "lucide-react"
+import { Calendar, Clock, User, MapPin, AlertCircle, Edit } from "lucide-react"
 
 interface TimesheetEntry {
   id: string
@@ -41,7 +42,7 @@ interface TimesheetAdjustment {
   id: string
   reason: string
   createdAt: Date
-  adjustedBy: {
+  adjuster: {
     firstName: string
     lastName: string
   }
@@ -80,6 +81,7 @@ interface TimesheetDetailDialogProps {
   timesheet: Timesheet | null
   open: boolean
   onOpenChange: (open: boolean) => void
+  onAdjustEntry?: (entry: TimesheetEntry) => void
 }
 
 const statusColors: Record<string, string> = {
@@ -93,8 +95,11 @@ export function TimesheetDetailDialog({
   timesheet,
   open,
   onOpenChange,
+  onAdjustEntry,
 }: TimesheetDetailDialogProps) {
   if (!timesheet) return null
+
+  const canAdjust = timesheet.status === 'DRAFT' && onAdjustEntry
 
   const formatWeekRange = (start: Date, end: Date) => {
     const startDate = new Date(start)
@@ -170,6 +175,7 @@ export function TimesheetDetailDialog({
                     <TableHead>Clock Out</TableHead>
                     <TableHead>Hours</TableHead>
                     <TableHead>Shift</TableHead>
+                    {canAdjust && <TableHead className="text-right">Actions</TableHead>}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -206,6 +212,18 @@ export function TimesheetDetailDialog({
                       <TableCell className="text-sm text-muted-foreground">
                         {entry.shift?.name || "-"}
                       </TableCell>
+                      {canAdjust && (
+                        <TableCell className="text-right">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => onAdjustEntry!(entry)}
+                            title="Adjust Entry"
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                        </TableCell>
+                      )}
                     </TableRow>
                   ))}
                 </TableBody>
@@ -232,8 +250,8 @@ export function TimesheetDetailDialog({
                         <div>
                           <p className="font-medium">{adjustment.reason}</p>
                           <p className="text-sm text-muted-foreground mt-1">
-                            Adjusted by {adjustment.adjustedBy.firstName}{" "}
-                            {adjustment.adjustedBy.lastName}
+                            Adjusted by {adjustment.adjuster.firstName}{" "}
+                            {adjustment.adjuster.lastName}
                           </p>
                         </div>
                         <p className="text-sm text-muted-foreground">
