@@ -75,6 +75,7 @@ interface AdminSidebarProps {
     lastName: string
     email: string
     role: string
+    imageUrl?: string | null
   }
 }
 

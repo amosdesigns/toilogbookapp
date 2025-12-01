@@ -30,6 +30,23 @@ function calculateHours(start: Date, end: Date): number {
   return Math.round((diff / (1000 * 60 * 60)) * 100) / 100 // Round to 2 decimals
 }
 
+// Convert Decimal fields to numbers for client serialization
+function serializeTimesheet(timesheet: unknown): unknown {
+  const t = timesheet as Record<string, unknown>
+  return {
+    ...t,
+    totalHours: t.totalHours ? Number(t.totalHours) : 0,
+    entries: Array.isArray(t.entries) ? t.entries.map((entry: unknown) => {
+      const e = entry as Record<string, unknown>
+      return {
+        ...e,
+        hoursWorked: e.hoursWorked ? Number(e.hoursWorked) : 0,
+        originalHours: e.originalHours ? Number(e.originalHours) : null,
+      }
+    }) : [],
+  }
+}
+
 /**
  * Get all timesheets with optional filtering
  */
@@ -51,7 +68,7 @@ export async function getTimesheets(params: {
 
     const where: {
       userId?: string
-      status?: string
+      status?: 'DRAFT' | 'PENDING' | 'APPROVED' | 'REJECTED'
       weekStartDate?: Date
     } = {}
 
@@ -100,7 +117,10 @@ export async function getTimesheets(params: {
       ],
     })
 
-    return { ok: true, data: timesheets }
+    // Serialize Decimal fields to numbers
+    const serialized = timesheets.map(serializeTimesheet)
+
+    return { ok: true, data: serialized }
   } catch (error) {
     console.error('Error fetching timesheets:', error)
     return to(error)
@@ -152,7 +172,7 @@ export async function getTimesheetById(id: string): Promise<Result<unknown>> {
         },
         adjustments: {
           include: {
-            adjustedBy: {
+            adjuster: {
               select: {
                 firstName: true,
                 lastName: true,
@@ -182,7 +202,10 @@ export async function getTimesheetById(id: string): Promise<Result<unknown>> {
       return { ok: false, message: 'Timesheet not found' }
     }
 
-    return { ok: true, data: timesheet }
+    // Serialize Decimal fields to numbers
+    const serialized = serializeTimesheet(timesheet)
+
+    return { ok: true, data: serialized }
   } catch (error) {
     console.error('Error fetching timesheet:', error)
     return to(error)
@@ -304,9 +327,10 @@ export async function generateTimesheet(params: {
     })
 
     revalidatePath('/admin/dashboard/timesheets')
+    const serialized = serializeTimesheet(timesheet)
     return {
       ok: true,
-      data: timesheet,
+      data: serialized,
       message: `Timesheet generated with ${entries.length} entries (${totalHours} hours)`,
     }
   } catch (error) {
@@ -351,7 +375,8 @@ export async function submitTimesheet(id: string): Promise<Result<unknown>> {
     })
 
     revalidatePath('/admin/dashboard/timesheets')
-    return { ok: true, data: updated, message: 'Timesheet submitted for approval' }
+    const serialized = serializeTimesheet(updated)
+    return { ok: true, data: serialized, message: 'Timesheet submitted for approval' }
   } catch (error) {
     console.error('Error submitting timesheet:', error)
     return to(error)
@@ -394,7 +419,8 @@ export async function approveTimesheet(id: string): Promise<Result<unknown>> {
     })
 
     revalidatePath('/admin/dashboard/timesheets')
-    return { ok: true, data: updated, message: 'Timesheet approved' }
+    const serialized = serializeTimesheet(updated)
+    return { ok: true, data: serialized, message: 'Timesheet approved' }
   } catch (error) {
     console.error('Error approving timesheet:', error)
     return to(error)
@@ -445,7 +471,8 @@ export async function rejectTimesheet(
     })
 
     revalidatePath('/admin/dashboard/timesheets')
-    return { ok: true, data: updated, message: 'Timesheet rejected' }
+    const serialized = serializeTimesheet(updated)
+    return { ok: true, data: serialized, message: 'Timesheet rejected' }
   } catch (error) {
     console.error('Error rejecting timesheet:', error)
     return to(error)
@@ -540,6 +567,200 @@ export async function getUsersWithDutySessions(params: {
     return { ok: true, data: users }
   } catch (error) {
     console.error('Error fetching users with duty sessions:', error)
+    return to(error)
+  }
+}
+
+/**
+ * Adjust a timesheet entry (edit hours/times)
+ */
+export async function adjustTimesheetEntry(params: {
+  entryId: string
+  clockInTime: string
+  clockOutTime: string
+  reason: string
+}): Promise<Result<unknown>> {
+  try {
+    const user = await getCurrentUser()
+    if (!user) {
+      return { ok: false, message: 'Unauthorized' }
+    }
+
+    if (!hasRole(user.role, 'SUPERVISOR')) {
+      return { ok: false, message: 'Only supervisors can adjust entries' }
+    }
+
+    if (!params.reason || params.reason.trim().length === 0) {
+      return { ok: false, message: 'Adjustment reason is required' }
+    }
+
+    const entry = await prisma.timesheetEntry.findUnique({
+      where: { id: params.entryId },
+      include: {
+        timesheet: {
+          select: {
+            status: true,
+          },
+        },
+      },
+    })
+
+    if (!entry) {
+      return { ok: false, message: 'Entry not found' }
+    }
+
+    if (entry.timesheet.status !== 'DRAFT') {
+      return {
+        ok: false,
+        message: 'Can only adjust entries in draft timesheets',
+      }
+    }
+
+    const newClockIn = new Date(params.clockInTime)
+    const newClockOut = new Date(params.clockOutTime)
+
+    if (newClockOut <= newClockIn) {
+      return { ok: false, message: 'Clock out must be after clock in' }
+    }
+
+    const newHours = calculateHours(newClockIn, newClockOut)
+
+    // Update entry
+    await prisma.timesheetEntry.update({
+      where: { id: params.entryId },
+      data: {
+        clockInTime: newClockIn,
+        clockOutTime: newClockOut,
+        hoursWorked: newHours,
+        wasAdjusted: true,
+      },
+    })
+
+    // Create adjustment record
+    await prisma.timesheetAdjustment.create({
+      data: {
+        timesheetId: entry.timesheetId,
+        entryId: params.entryId,
+        type: 'TIME_EDITED',
+        fieldChanged: 'clockTimes',
+        oldValue: JSON.stringify({
+          clockInTime: entry.clockInTime,
+          clockOutTime: entry.clockOutTime,
+          hoursWorked: Number(entry.hoursWorked),
+        }),
+        newValue: JSON.stringify({
+          clockInTime: newClockIn,
+          clockOutTime: newClockOut,
+          hoursWorked: newHours,
+        }),
+        adjustedBy: user.id,
+        reason: params.reason,
+      },
+    })
+
+    // Recalculate timesheet totals
+    const allEntries = await prisma.timesheetEntry.findMany({
+      where: { timesheetId: entry.timesheetId },
+    })
+
+    const totalHours = allEntries.reduce(
+      (sum, e) => sum + Number(e.hoursWorked),
+      0
+    )
+
+    await prisma.timesheet.update({
+      where: { id: entry.timesheetId },
+      data: { totalHours },
+    })
+
+    revalidatePath('/admin/dashboard/timesheets')
+    return { ok: true, data: null, message: 'Entry adjusted successfully' }
+  } catch (error) {
+    console.error('Error adjusting entry:', error)
+    return to(error)
+  }
+}
+
+/**
+ * Bulk approve multiple timesheets
+ */
+export async function bulkApproveTimesheets(
+  timesheetIds: string[]
+): Promise<Result<{ approved: number; failed: number; errors: string[] }>> {
+  try {
+    const user = await getCurrentUser()
+    if (!user) {
+      return { ok: false, message: 'Unauthorized' }
+    }
+
+    if (!hasRole(user.role, 'SUPERVISOR')) {
+      return { ok: false, message: 'Only supervisors can approve timesheets' }
+    }
+
+    if (!timesheetIds || timesheetIds.length === 0) {
+      return { ok: false, message: 'No timesheets selected' }
+    }
+
+    let approved = 0
+    let failed = 0
+    const errors: string[] = []
+
+    // Process each timesheet
+    for (const id of timesheetIds) {
+      try {
+        const timesheet = await prisma.timesheet.findUnique({
+          where: { id },
+          select: {
+            status: true,
+            user: {
+              select: {
+                firstName: true,
+                lastName: true,
+              },
+            },
+          },
+        })
+
+        if (!timesheet) {
+          errors.push(`Timesheet ${id} not found`)
+          failed++
+          continue
+        }
+
+        if (timesheet.status !== 'PENDING') {
+          errors.push(
+            `${timesheet.user.firstName} ${timesheet.user.lastName}: Not in pending status`
+          )
+          failed++
+          continue
+        }
+
+        await prisma.timesheet.update({
+          where: { id },
+          data: {
+            status: 'APPROVED',
+            approvedBy: user.id,
+            approvedAt: new Date(),
+          },
+        })
+
+        approved++
+      } catch (error) {
+        console.error(`Error approving timesheet ${id}:`, error)
+        errors.push(`Timesheet ${id}: ${error instanceof Error ? error.message : 'Unknown error'}`)
+        failed++
+      }
+    }
+
+    revalidatePath('/admin/dashboard/timesheets')
+
+    return {
+      ok: true,
+      data: { approved, failed, errors },
+      message: `Approved ${approved} timesheet(s)${failed > 0 ? `, ${failed} failed` : ''}`,
+    }
+  } catch (error) {
+    console.error('Error in bulk approve:', error)
     return to(error)
   }
 }

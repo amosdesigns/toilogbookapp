@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import { TimesheetFiltersHorizontal, type TimesheetFilters } from "@/components/timesheets/timesheet-filters-horizontal"
 import { TimesheetsTable } from "@/components/timesheets/timesheets-table"
 import { TimesheetDetailDialog } from "@/components/timesheets/timesheet-detail-dialog"
+import { AdjustEntryDialog } from "@/components/timesheets/adjust-entry-dialog"
 import {
   getTimesheets,
   getTimesheetById,
@@ -11,6 +12,8 @@ import {
   approveTimesheet,
   rejectTimesheet,
   deleteTimesheet,
+  bulkApproveTimesheets,
+  adjustTimesheetEntry,
 } from "@/lib/actions/timesheet-actions"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
@@ -50,6 +53,10 @@ export function TimesheetManagementClient({ user, users }: TimesheetManagementCl
   const [isRejectDialogOpen, setIsRejectDialogOpen] = useState(false)
   const [rejectTimesheetId, setRejectTimesheetId] = useState<string | null>(null)
   const [rejectionReason, setRejectionReason] = useState("")
+  const [selectedIds, setSelectedIds] = useState<string[]>([])
+  const [isBulkApproving, setIsBulkApproving] = useState(false)
+  const [isAdjustDialogOpen, setIsAdjustDialogOpen] = useState(false)
+  const [adjustingEntry, setAdjustingEntry] = useState<any | null>(null)
 
   // Fetch timesheets whenever filters change
   useEffect(() => {
@@ -155,6 +162,78 @@ export function TimesheetManagementClient({ user, users }: TimesheetManagementCl
     }
   }
 
+  const handleBulkApprove = async () => {
+    if (selectedIds.length === 0) {
+      toast.error("Please select timesheets to approve")
+      return
+    }
+
+    if (!confirm(`Approve ${selectedIds.length} timesheet(s)?`)) return
+
+    setIsBulkApproving(true)
+    const result = await bulkApproveTimesheets(selectedIds)
+    setIsBulkApproving(false)
+
+    if (result.ok) {
+      const { approved, failed, errors } = result.data
+
+      if (approved > 0) {
+        toast.success(`Successfully approved ${approved} timesheet(s)`)
+      }
+
+      if (failed > 0 && errors.length > 0) {
+        toast.error(`${failed} timesheet(s) failed to approve`)
+        // Show first few errors
+        errors.slice(0, 3).forEach(error => toast.error(error))
+      }
+
+      // Clear selection and refresh
+      setSelectedIds([])
+      const updatedTimesheets = await getTimesheets(filters)
+      if (updatedTimesheets.ok) {
+        setTimesheets(updatedTimesheets.data)
+      }
+    } else {
+      toast.error(result.message || "Failed to bulk approve timesheets")
+    }
+  }
+
+  const handleAdjustEntry = (entry: any) => {
+    setAdjustingEntry(entry)
+    setIsAdjustDialogOpen(true)
+  }
+
+  const handleConfirmAdjust = async (data: {
+    entryId: string
+    clockInTime: string
+    clockOutTime: string
+    reason: string
+  }) => {
+    const result = await adjustTimesheetEntry(data)
+
+    if (result.ok) {
+      toast.success(result.message || "Entry adjusted successfully")
+      setIsAdjustDialogOpen(false)
+      setAdjustingEntry(null)
+
+      // Refresh the current timesheet detail if it's open
+      if (selectedTimesheet) {
+        const refreshed = await getTimesheetById(selectedTimesheet.id)
+        if (refreshed.ok) {
+          setSelectedTimesheet(refreshed.data)
+        }
+      }
+
+      // Refresh the timesheets list
+      const updatedTimesheets = await getTimesheets(filters)
+      if (updatedTimesheets.ok) {
+        setTimesheets(updatedTimesheets.data)
+      }
+    } else {
+      toast.error(result.message || "Failed to adjust entry")
+    }
+  }
+
   const handleExport = () => {
     // Export timesheets to CSV
     const csvContent = [
@@ -194,6 +273,15 @@ export function TimesheetManagementClient({ user, users }: TimesheetManagementCl
           </p>
         </div>
         <div className="flex items-center gap-3">
+          {selectedIds.length > 0 && (
+            <Button
+              onClick={handleBulkApprove}
+              disabled={isBulkApproving}
+              variant="default"
+            >
+              {isBulkApproving ? "Approving..." : `Approve ${selectedIds.length} Selected`}
+            </Button>
+          )}
           <Button variant="outline" onClick={handleExport} disabled={timesheets.length === 0}>
             <Download className="h-4 w-4 mr-2" />
             Export
@@ -234,6 +322,8 @@ export function TimesheetManagementClient({ user, users }: TimesheetManagementCl
             onApproveTimesheet={handleApproveTimesheet}
             onRejectTimesheet={handleRejectTimesheet}
             onDeleteTimesheet={handleDeleteTimesheet}
+            selectedIds={selectedIds}
+            onSelectionChange={setSelectedIds}
           />
         )}
       </Card>
@@ -243,6 +333,15 @@ export function TimesheetManagementClient({ user, users }: TimesheetManagementCl
         timesheet={selectedTimesheet}
         open={isDetailDialogOpen}
         onOpenChange={setIsDetailDialogOpen}
+        onAdjustEntry={handleAdjustEntry}
+      />
+
+      {/* Adjust Entry Dialog */}
+      <AdjustEntryDialog
+        entry={adjustingEntry}
+        open={isAdjustDialogOpen}
+        onOpenChange={setIsAdjustDialogOpen}
+        onConfirm={handleConfirmAdjust}
       />
 
       {/* Reject Dialog */}
