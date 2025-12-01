@@ -1,7 +1,7 @@
 "use server"
 
 import { prisma } from "@/lib/prisma"
-import { to, type Result } from "@/lib/utils/RenderError"
+import { to, type ActionResult } from "@/lib/utils/RenderError"
 import { getCurrentUser } from "@/lib/auth/sync-user"
 import { revalidatePath } from "next/cache"
 import { isAdmin } from "@/lib/utils/auth"
@@ -12,7 +12,7 @@ import {
   type UpdateLocationInput,
 } from "@/lib/validations/location"
 
-export async function getActiveLocations(): Promise<Result<any>> {
+export async function getActiveLocations(): Promise<ActionResult<any>> {
   try {
     const locations = await prisma.location.findMany({
       where: { isActive: true },
@@ -68,7 +68,7 @@ export interface Location {
 /**
  * Get all locations (including inactive) with full details - Admin only
  */
-export async function getAllLocationsAdmin(): Promise<Result<Location[]>> {
+export async function getAllLocationsAdmin(): Promise<ActionResult<Location[]>> {
   try {
     const user = await getCurrentUser()
     if (!user) {
@@ -96,7 +96,7 @@ export async function getAllLocationsAdmin(): Promise<Result<Location[]>> {
 /**
  * Create a new location - Admin only
  */
-export async function createLocation(input: CreateLocationInput): Promise<Result<Location>> {
+export async function createLocation(input: CreateLocationInput): Promise<ActionResult<Location>> {
   try {
     const user = await getCurrentUser()
     if (!user) {
@@ -150,7 +150,7 @@ export async function createLocation(input: CreateLocationInput): Promise<Result
 export async function updateLocation(
   id: string,
   input: UpdateLocationInput
-): Promise<Result<Location>> {
+): Promise<ActionResult<Location>> {
   try {
     const user = await getCurrentUser()
     if (!user) {
@@ -213,7 +213,7 @@ export async function updateLocation(
 /**
  * Delete (soft delete) a location - Admin only
  */
-export async function deleteLocation(id: string): Promise<Result<void>> {
+export async function deleteLocation(id: string): Promise<ActionResult<void>> {
   try {
     const user = await getCurrentUser()
     if (!user) {

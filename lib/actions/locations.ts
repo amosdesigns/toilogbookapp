@@ -2,9 +2,9 @@
 
 import { prisma } from '@/lib/prisma'
 import { getCurrentUser } from '@/lib/auth/sync-user'
-import { to, type Result } from '@/lib/utils/RenderError'
+import { to, type ActionResult } from '@/lib/utils/RenderError'
 
-export async function getActiveLocations(): Promise<Result<Array<{ id: string; name: string }>>> {
+export async function getActiveLocations(): Promise<ActionResult<Array<{ id: string; name: string }>>> {
   try {
     const user = await getCurrentUser()
     if (!user) {

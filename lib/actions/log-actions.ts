@@ -2,7 +2,7 @@
 
 import { auth } from "@clerk/nextjs/server"
 import { prisma } from "@/lib/prisma"
-import { to, type Result } from "@/lib/utils/RenderError"
+import { to, type ActionResult } from "@/lib/utils/RenderError"
 
 export async function getLogsByLocation(locationId: string, limit: number = 20) {
   try {
@@ -42,7 +42,7 @@ export async function getLogsByLocation(locationId: string, limit: number = 20) 
   }
 }
 
-export async function getIncidents(): Promise<Result<any>> {
+export async function getIncidents(): Promise<ActionResult<any>> {
   try {
     const { userId } = await auth()
 

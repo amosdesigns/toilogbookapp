@@ -2,10 +2,10 @@
 
 import { auth } from "@clerk/nextjs/server"
 import { prisma } from "@/lib/prisma"
-import { to, type Result } from "@/lib/utils/RenderError"
+import { to, type ActionResult } from "@/lib/utils/RenderError"
 
 // Get current user from database
-export async function getCurrentUser(): Promise<Result<any>> {
+export async function getCurrentUser(): Promise<ActionResult<any>> {
   try {
     const { userId } = await auth()
 
@@ -44,7 +44,7 @@ export async function getCurrentUser(): Promise<Result<any>> {
 }
 
 // Get all users (for admin/supervisor use)
-export async function getUsers(): Promise<Result<any>> {
+export async function getUsers(): Promise<ActionResult<any>> {
   try {
     const { userId } = await auth()
 

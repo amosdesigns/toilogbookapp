@@ -5,7 +5,7 @@ import { prisma } from '@/lib/prisma'
 import { getCurrentUser } from '@/lib/auth/sync-user'
 import { canManageResource } from '@/lib/utils/auth'
 import { createLogSchema, updateLogSchema } from '@/lib/validations/log'
-import { to, type Result } from '@/lib/utils/RenderError'
+import { to, type ActionResult } from '@/lib/utils/RenderError'
 
 interface GetLogsParams {
   locationId?: string
@@ -17,7 +17,7 @@ interface GetLogsParams {
   status?: string
 }
 
-export async function getLogs(params: GetLogsParams = {}): Promise<Result<any[]>> {
+export async function getLogs(params: GetLogsParams = {}): Promise<ActionResult<any[]>> {
   try {
     const user = await getCurrentUser()
     if (!user) {
@@ -99,7 +99,7 @@ export async function getLogs(params: GetLogsParams = {}): Promise<Result<any[]>
   }
 }
 
-export async function getLogById(id: string): Promise<Result<any>> {
+export async function getLogById(id: string): Promise<ActionResult<any>> {
   try {
     const user = await getCurrentUser()
     if (!user) {
@@ -139,7 +139,7 @@ export async function getLogById(id: string): Promise<Result<any>> {
   }
 }
 
-export async function updateLog(id: string, data: any): Promise<Result<any>> {
+export async function updateLog(id: string, data: any): Promise<ActionResult<any>> {
   try {
     const user = await getCurrentUser()
     if (!user) {
@@ -197,7 +197,7 @@ export async function updateLog(id: string, data: any): Promise<Result<any>> {
   }
 }
 
-export async function createLog(data: any): Promise<Result<any>> {
+export async function createLog(data: any): Promise<ActionResult<any>> {
   try {
     const user = await getCurrentUser()
     if (!user) {
@@ -261,7 +261,7 @@ export async function createLog(data: any): Promise<Result<any>> {
   }
 }
 
-export async function deleteLog(id: string): Promise<Result<null>> {
+export async function deleteLog(id: string): Promise<ActionResult<null>> {
   try {
     const user = await getCurrentUser()
     if (!user) {

@@ -3,14 +3,14 @@
 import { auth } from "@clerk/nextjs/server"
 import { prisma } from "@/lib/prisma"
 import { revalidatePath } from "next/cache"
-import { to, type Result } from "@/lib/utils/RenderError"
+import { to, type ActionResult } from "@/lib/utils/RenderError"
 
 // Get shifts with optional filtering
 export async function getShifts(params?: {
   startDate?: string
   endDate?: string
   locationId?: string
-}): Promise<Result<any>> {
+}): Promise<ActionResult<any>> {
   try {
     const { userId } = await auth()
 
@@ -76,7 +76,7 @@ export async function createShift(data: {
   endTime: string
   locationId: string
   userAssignments?: Array<{ userId: string; role?: string | null }>
-}): Promise<Result<any>> {
+}): Promise<ActionResult<any>> {
   try {
     const { userId } = await auth()
 
@@ -159,7 +159,7 @@ export async function updateShift(
     locationId?: string
     userAssignments?: Array<{ userId: string; role?: string | null }>
   }
-): Promise<Result<any>> {
+): Promise<ActionResult<any>> {
   try {
     const { userId } = await auth()
 
@@ -242,7 +242,7 @@ export async function updateShift(
 }
 
 // Delete a shift
-export async function deleteShift(shiftId: string): Promise<Result<any>> {
+export async function deleteShift(shiftId: string): Promise<ActionResult<any>> {
   try {
     const { userId } = await auth()
 
@@ -280,7 +280,7 @@ export async function deleteShift(shiftId: string): Promise<Result<any>> {
 // Get recurring shift patterns
 export async function getRecurringPatterns(
   locationId?: string
-): Promise<Result<any>> {
+): Promise<ActionResult<any>> {
   try {
     const { userId } = await auth()
 
@@ -338,7 +338,7 @@ export async function createRecurringPattern(data: {
   startDate: string
   endDate?: string
   userAssignments?: Array<{ userId: string; role?: string | null }>
-}): Promise<Result<any>> {
+}): Promise<ActionResult<any>> {
   try {
     const { userId } = await auth()
 
@@ -429,7 +429,7 @@ export async function updateRecurringPattern(
     isActive?: boolean
     userAssignments?: Array<{ userId: string; role?: string | null }>
   }
-): Promise<Result<any>> {
+): Promise<ActionResult<any>> {
   try {
     const { userId } = await auth()
 
@@ -522,7 +522,7 @@ export async function updateRecurringPattern(
 // Delete a recurring shift pattern
 export async function deleteRecurringPattern(
   patternId: string
-): Promise<Result<any>> {
+): Promise<ActionResult<any>> {
   try {
     const { userId } = await auth()
 

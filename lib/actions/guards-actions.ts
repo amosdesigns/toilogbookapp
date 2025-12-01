@@ -2,9 +2,9 @@
 
 import { auth } from "@clerk/nextjs/server"
 import { prisma } from "@/lib/prisma"
-import { to, type Result } from "@/lib/utils/RenderError"
+import { to, type ActionResult } from "@/lib/utils/RenderError"
 
-export async function getGuardsOnDuty(): Promise<Result<any>> {
+export async function getGuardsOnDuty(): Promise<ActionResult<any>> {
   try {
     const { userId } = await auth()
 

@@ -3,9 +3,9 @@
 import { auth } from "@clerk/nextjs/server"
 import { prisma } from "@/lib/prisma"
 import { revalidatePath } from "next/cache"
-import { to, type Result } from "@/lib/utils/RenderError"
+import { to, type ActionResult } from "@/lib/utils/RenderError"
 
-export async function reviewIncident(incidentId: string, reviewNotes: string): Promise<Result<any>> {
+export async function reviewIncident(incidentId: string, reviewNotes: string): Promise<ActionResult<any>> {
   try {
     const { userId } = await auth()
 

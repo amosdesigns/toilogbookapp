@@ -25,6 +25,12 @@ enum NotificationPriority {
   URGENT
 }
 
+enum MessageType {
+  GUARD_TO_SUPERVISOR
+  SUPERVISOR_TO_GUARD
+  BROADCAST
+}
+
 // Enums
 enum Role {
   SUPER_ADMIN
@@ -128,6 +134,7 @@ model User {
   recurringUserAssignments RecurringUserAssignment[] // Recurring patterns assigned to this user
   safetyChecklistResponses SafetyChecklistResponse[]
   notifications            Notification[] // User-specific notifications
+  sentMessages             Message[]      @relation("SentMessages")
 
   // Timesheet relations
   timesheets           Timesheet[] // Timesheets for this user
@@ -333,6 +340,7 @@ model DutySession {
   locationCheckIns         LocationCheckIn[]
   safetyChecklistResponses SafetyChecklistResponse[]
   timesheetEntries         TimesheetEntry[]
+  messages                 Message[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -390,6 +398,39 @@ model Notification {
   @@index([priority])
   @@index([createdAt])
   @@map("notifications")
+}
+
+// Guard-Supervisor Messaging System
+model Message {
+  id      String      @id @default(cuid())
+  content String      @db.Text
+  type    MessageType @default(GUARD_TO_SUPERVISOR)
+
+  // Sender info
+  senderId String
+  sender   User   @relation("SentMessages", fields: [senderId], references: [id])
+
+  // Duty session context (session-based messages)
+  dutySessionId String
+  dutySession   DutySession @relation(fields: [dutySessionId], references: [id], onDelete: Cascade)
+
+  // Threading support for replies
+  replyToId String?   // Parent message ID
+  replyTo   Message?  @relation("MessageReplies", fields: [replyToId], references: [id], onDelete: SetNull)
+  replies   Message[] @relation("MessageReplies")
+
+  // Read tracking
+  readAt DateTime? // When recipient read the message
+  readBy String?   @db.Text // JSON array of user IDs (for broadcasts)
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([senderId])
+  @@index([dutySessionId])
+  @@index([replyToId])
+  @@index([createdAt])
 }
 
 // Asset Management - Track boats, vehicles, equipment at marinas

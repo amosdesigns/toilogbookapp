@@ -3,7 +3,7 @@
 import { prisma } from '@/lib/prisma'
 import { getCurrentUser } from '@/lib/auth/sync-user'
 import { revalidatePath } from 'next/cache'
-import { to, type Result } from '@/lib/utils/RenderError'
+import { to, type ActionResult } from '@/lib/utils/RenderError'
 import {
   createSafetyChecklistItemSchema,
   updateSafetyChecklistItemSchema,
@@ -41,7 +41,7 @@ export interface SubmitChecklistData {
 /**
  * Get all active safety checklist items ordered by display order
  */
-export async function getSafetyChecklistItems(): Promise<Result<SafetyChecklistItem[]>> {
+export async function getSafetyChecklistItems(): Promise<ActionResult<SafetyChecklistItem[]>> {
   try {
     const user = await getCurrentUser()
     if (!user) {
@@ -79,7 +79,7 @@ export async function getSafetyChecklistItems(): Promise<Result<SafetyChecklistI
  */
 export async function submitSafetyChecklist(
   data: SubmitChecklistData
-): Promise<Result<{ responseId: string; logId: string }>> {
+): Promise<ActionResult<{ responseId: string; logId: string }>> {
   try {
     const user = await getCurrentUser()
     if (!user) {
@@ -202,7 +202,7 @@ export async function submitSafetyChecklist(
 /**
  * Get all safety checklist items (including inactive) - Admin only
  */
-export async function getAllSafetyChecklistItems(): Promise<Result<SafetyChecklistItem[]>> {
+export async function getAllSafetyChecklistItems(): Promise<ActionResult<SafetyChecklistItem[]>> {
   try {
     const user = await getCurrentUser()
     if (!user) {
@@ -243,7 +243,7 @@ export async function getAllSafetyChecklistItems(): Promise<Result<SafetyCheckli
  */
 export async function createSafetyChecklistItem(
   input: CreateSafetyChecklistItemInput
-): Promise<Result<SafetyChecklistItem>> {
+): Promise<ActionResult<SafetyChecklistItem>> {
   try {
     const user = await getCurrentUser()
     if (!user) {
@@ -318,7 +318,7 @@ export async function createSafetyChecklistItem(
  */
 export async function createMultipleSafetyChecklistItems(
   input: CreateMultipleSafetyChecklistItemsInput
-): Promise<Result<{ created: number; skipped: string[] }>> {
+): Promise<ActionResult<{ created: number; skipped: string[] }>> {
   try {
     const user = await getCurrentUser()
     if (!user) {
@@ -410,7 +410,7 @@ export async function createMultipleSafetyChecklistItems(
 export async function updateSafetyChecklistItem(
   id: string,
   input: UpdateSafetyChecklistItemInput
-): Promise<Result<SafetyChecklistItem>> {
+): Promise<ActionResult<SafetyChecklistItem>> {
   try {
     const user = await getCurrentUser()
     if (!user) {
@@ -482,7 +482,7 @@ export async function updateSafetyChecklistItem(
 /**
  * Delete (soft delete) a safety checklist item - Admin only
  */
-export async function deleteSafetyChecklistItem(id: string): Promise<Result<void>> {
+export async function deleteSafetyChecklistItem(id: string): Promise<ActionResult<void>> {
   try {
     const user = await getCurrentUser()
     if (!user) {
@@ -527,7 +527,7 @@ export async function deleteSafetyChecklistItem(id: string): Promise<Result<void
  */
 export async function reorderSafetyChecklistItems(
   input: ReorderSafetyChecklistItemsInput
-): Promise<Result<void>> {
+): Promise<ActionResult<void>> {
   try {
     const user = await getCurrentUser()
     if (!user) {

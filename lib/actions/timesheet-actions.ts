@@ -4,7 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { prisma } from '@/lib/prisma'
 import { getCurrentUser } from '@/lib/auth/sync-user'
 import { hasRole } from '@/lib/utils/auth'
-import { to, type Result } from '@/lib/utils/RenderError'
+import { to, type ActionResult } from '@/lib/utils/RenderError'
 
 // Helper function to get week boundaries (Sunday-Saturday)
 function getWeekBoundaries(date: Date): { weekStart: Date; weekEnd: Date } {
@@ -54,7 +54,7 @@ export async function getTimesheets(params: {
   userId?: string
   status?: string
   weekStartDate?: string
-}): Promise<Result<unknown[]>> {
+}): Promise<ActionResult<unknown[]>> {
   try {
     const user = await getCurrentUser()
     if (!user) {
@@ -130,7 +130,7 @@ export async function getTimesheets(params: {
 /**
  * Get a single timesheet by ID
  */
-export async function getTimesheetById(id: string): Promise<Result<unknown>> {
+export async function getTimesheetById(id: string): Promise<ActionResult<unknown>> {
   try {
     const user = await getCurrentUser()
     if (!user) {
@@ -218,7 +218,7 @@ export async function getTimesheetById(id: string): Promise<Result<unknown>> {
 export async function generateTimesheet(params: {
   userId: string
   weekStartDate: string // ISO date string
-}): Promise<Result<unknown>> {
+}): Promise<ActionResult<unknown>> {
   try {
     const user = await getCurrentUser()
     if (!user) {
@@ -342,7 +342,7 @@ export async function generateTimesheet(params: {
 /**
  * Submit timesheet for approval (changes status from DRAFT to PENDING)
  */
-export async function submitTimesheet(id: string): Promise<Result<unknown>> {
+export async function submitTimesheet(id: string): Promise<ActionResult<unknown>> {
   try {
     const user = await getCurrentUser()
     if (!user) {
@@ -386,7 +386,7 @@ export async function submitTimesheet(id: string): Promise<Result<unknown>> {
 /**
  * Approve a timesheet
  */
-export async function approveTimesheet(id: string): Promise<Result<unknown>> {
+export async function approveTimesheet(id: string): Promise<ActionResult<unknown>> {
   try {
     const user = await getCurrentUser()
     if (!user) {
@@ -433,7 +433,7 @@ export async function approveTimesheet(id: string): Promise<Result<unknown>> {
 export async function rejectTimesheet(
   id: string,
   reason: string
-): Promise<Result<unknown>> {
+): Promise<ActionResult<unknown>> {
   try {
     const user = await getCurrentUser()
     if (!user) {
@@ -482,7 +482,7 @@ export async function rejectTimesheet(
 /**
  * Delete a timesheet (only if DRAFT status)
  */
-export async function deleteTimesheet(id: string): Promise<Result<null>> {
+export async function deleteTimesheet(id: string): Promise<ActionResult<null>> {
   try {
     const user = await getCurrentUser()
     if (!user) {
@@ -525,7 +525,7 @@ export async function deleteTimesheet(id: string): Promise<Result<null>> {
  */
 export async function getUsersWithDutySessions(params: {
   weekStartDate: string
-}): Promise<Result<unknown[]>> {
+}): Promise<ActionResult<unknown[]>> {
   try {
     const user = await getCurrentUser()
     if (!user) {
@@ -579,7 +579,7 @@ export async function adjustTimesheetEntry(params: {
   clockInTime: string
   clockOutTime: string
   reason: string
-}): Promise<Result<unknown>> {
+}): Promise<ActionResult<unknown>> {
   try {
     const user = await getCurrentUser()
     if (!user) {
@@ -686,7 +686,7 @@ export async function adjustTimesheetEntry(params: {
  */
 export async function bulkApproveTimesheets(
   timesheetIds: string[]
-): Promise<Result<{ approved: number; failed: number; errors: string[] }>> {
+): Promise<ActionResult<{ approved: number; failed: number; errors: string[] }>> {
   try {
     const user = await getCurrentUser()
     if (!user) {

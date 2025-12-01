@@ -3,10 +3,10 @@
 import { revalidatePath } from 'next/cache'
 import { prisma } from '@/lib/prisma'
 import { getCurrentUser } from '@/lib/auth/sync-user'
-import { to, type Result } from '@/lib/utils/RenderError'
+import { to, type ActionResult } from '@/lib/utils/RenderError'
 import { updateProfileSchema } from '@/lib/validations/user'
 
-export async function getCurrentUserAction(): Promise<Result<any>> {
+export async function getCurrentUserAction(): Promise<ActionResult<any>> {
   try {
     const user = await getCurrentUser()
 
@@ -21,7 +21,7 @@ export async function getCurrentUserAction(): Promise<Result<any>> {
   }
 }
 
-export async function getUserById(userId: string): Promise<Result<any>> {
+export async function getUserById(userId: string): Promise<ActionResult<any>> {
   try {
     const currentUser = await getCurrentUser()
     if (!currentUser) {
@@ -61,7 +61,7 @@ export async function getUserById(userId: string): Promise<Result<any>> {
 export async function updateUserProfile(
   userId: string,
   data: any
-): Promise<Result<any>> {
+): Promise<ActionResult<any>> {
   try {
     const currentUser = await getCurrentUser()
     if (!currentUser) {
