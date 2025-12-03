@@ -338,3 +338,102 @@ export type TourStopWithRelations = Prisma.TourStopGetPayload<{
     }
   }
 }>
+
+// ============================================================================
+// Timesheet Types
+// ============================================================================
+
+export type TimesheetWithRelations = Prisma.TimesheetGetPayload<{
+  include: {
+    user: {
+      select: {
+        id: true
+        firstName: true
+        lastName: true
+        email: true
+      }
+    }
+    entries: {
+      include: {
+        location: {
+          select: {
+            name: true
+          }
+        }
+      }
+    }
+    approver: {
+      select: {
+        firstName: true
+        lastName: true
+      }
+    }
+  }
+}>
+
+export type TimesheetWithFullDetails = Prisma.TimesheetGetPayload<{
+  include: {
+    user: {
+      select: {
+        id: true
+        firstName: true
+        lastName: true
+        email: true
+      }
+    }
+    entries: {
+      include: {
+        location: {
+          select: {
+            name: true
+          }
+        }
+        shift: {
+          select: {
+            name: true
+          }
+        }
+        dutySession: true
+      }
+    }
+    adjustments: {
+      include: {
+        adjuster: {
+          select: {
+            firstName: true
+            lastName: true
+          }
+        }
+      }
+    }
+    approver: {
+      select: {
+        firstName: true
+        lastName: true
+      }
+    }
+    rejector: {
+      select: {
+        firstName: true
+        lastName: true
+      }
+    }
+  }
+}>
+
+export type TimesheetEntryWithLocation = Prisma.TimesheetEntryGetPayload<{
+  include: {
+    location: {
+      select: {
+        name: true
+      }
+    }
+  }
+}>
+
+export type UserWithDutySessions = {
+  id: string
+  firstName: string
+  lastName: string
+  role: string
+}

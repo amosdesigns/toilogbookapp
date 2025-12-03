@@ -20,11 +20,11 @@ import { MeFocusCalendar } from '@/components/shift-calendar/me-focus-calendar'
 import { ShiftFormDialog } from '@/components/shift-calendar/shift-form-dialog'
 import { RecurringPatternDialog } from '@/components/shift-calendar/recurring-pattern-dialog'
 import { toast } from 'sonner'
-import { getCurrentUser, getUsers } from '@/lib/actions/user-actions'
+import { getCurrentUser, getUsers, type CurrentUserData, type UserListItem } from '@/lib/actions/user-actions'
 import { getActiveLocations } from '@/lib/actions/location-actions'
 import { getShifts } from '@/lib/actions/shift-actions'
 import { getErrorMessage, type CatchError } from '@/lib/utils/error-handler'
-import type { Location, User, Shift } from '@/lib/types'
+import type { Location, Shift } from '@/lib/types'
 
 export default function ShiftsPage() {
   const { user: clerkUser, isLoaded } = useUser()
@@ -36,8 +36,8 @@ export default function ShiftsPage() {
 
   const [shifts, setShifts] = useState<Shift[]>([])
   const [locations, setLocations] = useState<Location[]>([])
-  const [users, setUsers] = useState<User[]>([])
-  const [currentUser, setCurrentUser] = useState<User | null>(null)
+  const [users, setUsers] = useState<UserListItem[]>([])
+  const [currentUser, setCurrentUser] = useState<CurrentUserData | null>(null)
 
   const [isShiftDialogOpen, setIsShiftDialogOpen] = useState(false)
   const [isRecurringDialogOpen, setIsRecurringDialogOpen] = useState(false)

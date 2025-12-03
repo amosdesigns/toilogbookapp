@@ -20,13 +20,16 @@ import {
 } from "@/components/ui/table"
 import { formatDateTime } from "@/lib/utils"
 import { Calendar, Clock, User, MapPin, AlertCircle, Edit } from "lucide-react"
+import { Prisma } from "@prisma/client"
+
+type Decimal = Prisma.Decimal
 
 interface TimesheetEntry {
   id: string
   date: Date
   clockInTime: Date
   clockOutTime: Date
-  hoursWorked: number
+  hoursWorked: Decimal | number
   location: {
     name: string
   }
@@ -35,7 +38,7 @@ interface TimesheetEntry {
   } | null
   wasAdjusted: boolean
   wasManuallyAdded: boolean
-  originalHours?: number
+  originalHours?: Decimal | number
 }
 
 interface TimesheetAdjustment {
@@ -52,7 +55,7 @@ interface Timesheet {
   id: string
   weekStartDate: Date
   weekEndDate: Date
-  totalHours: number
+  totalHours: Decimal | number
   totalEntries: number
   status: string
   user: {
@@ -148,7 +151,7 @@ export function TimesheetDetailDialog({
               <Clock className="h-4 w-4 text-muted-foreground" />
               <div>
                 <p className="text-sm text-muted-foreground">Total Hours</p>
-                <p className="text-lg font-semibold">{timesheet.totalHours.toFixed(2)}</p>
+                <p className="text-lg font-semibold">{typeof timesheet.totalHours === 'number' ? timesheet.totalHours.toFixed(2) : timesheet.totalHours.toNumber().toFixed(2)}</p>
               </div>
             </div>
             <div className="flex items-center gap-2">
@@ -195,7 +198,7 @@ export function TimesheetDetailDialog({
                       <TableCell>
                         <div className="flex items-center gap-2">
                           <span className="font-semibold">
-                            {entry.hoursWorked.toFixed(2)}
+                            {typeof entry.hoursWorked === 'number' ? entry.hoursWorked.toFixed(2) : entry.hoursWorked.toNumber().toFixed(2)}
                           </span>
                           {entry.wasAdjusted && (
                             <Badge variant="outline" className="text-xs">

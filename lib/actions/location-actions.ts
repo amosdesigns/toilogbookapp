@@ -12,7 +12,13 @@ import {
   type UpdateLocationInput,
 } from "@/lib/validations/location"
 
-export async function getActiveLocations(): Promise<ActionResult<any>> {
+// Type for active location (minimal data)
+export interface ActiveLocationData {
+  id: string
+  name: string
+}
+
+export async function getActiveLocations(): Promise<ActionResult<ActiveLocationData[]>> {
   try {
     const locations = await prisma.location.findMany({
       where: { isActive: true },

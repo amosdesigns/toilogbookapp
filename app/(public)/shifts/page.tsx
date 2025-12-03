@@ -6,14 +6,14 @@ import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Calendar } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { getCurrentUser } from '@/lib/actions/user-actions'
+import { getCurrentUser, type CurrentUserData } from '@/lib/actions/user-actions'
 import { getShifts } from '@/lib/actions/shift-actions'
 import { toast } from 'sonner'
-import type { Shift, User } from '@/lib/types'
+import type { Shift } from '@/lib/types'
 
 export default function ShiftsPage() {
   const [shifts, setShifts] = useState<Shift[]>([])
-  const [currentUser, setCurrentUser] = useState<User | null>(null)
+  const [currentUser, setCurrentUser] = useState<CurrentUserData | null>(null)
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {

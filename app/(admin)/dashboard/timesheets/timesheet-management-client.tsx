@@ -30,6 +30,7 @@ import {
 } from "@/components/ui/dialog"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
+import type { TimesheetWithRelations, TimesheetWithFullDetails, TimesheetEntryWithLocation } from "@/lib/types/prisma-types"
 
 interface User {
   id: string
@@ -46,8 +47,8 @@ interface TimesheetManagementClientProps {
 export function TimesheetManagementClient({ user, users }: TimesheetManagementClientProps) {
   const router = useRouter()
   const [filters, setFilters] = useState<TimesheetFilters>({})
-  const [timesheets, setTimesheets] = useState<any[]>([])
-  const [selectedTimesheet, setSelectedTimesheet] = useState<any | null>(null)
+  const [timesheets, setTimesheets] = useState<TimesheetWithRelations[]>([])
+  const [selectedTimesheet, setSelectedTimesheet] = useState<TimesheetWithFullDetails | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isDetailDialogOpen, setIsDetailDialogOpen] = useState(false)
   const [isRejectDialogOpen, setIsRejectDialogOpen] = useState(false)
@@ -56,7 +57,7 @@ export function TimesheetManagementClient({ user, users }: TimesheetManagementCl
   const [selectedIds, setSelectedIds] = useState<string[]>([])
   const [isBulkApproving, setIsBulkApproving] = useState(false)
   const [isAdjustDialogOpen, setIsAdjustDialogOpen] = useState(false)
-  const [adjustingEntry, setAdjustingEntry] = useState<any | null>(null)
+  const [adjustingEntry, setAdjustingEntry] = useState<TimesheetEntryWithLocation | null>(null)
 
   // Fetch timesheets whenever filters change
   useEffect(() => {
@@ -198,7 +199,7 @@ export function TimesheetManagementClient({ user, users }: TimesheetManagementCl
     }
   }
 
-  const handleAdjustEntry = (entry: any) => {
+  const handleAdjustEntry = (entry: TimesheetEntryWithLocation) => {
     setAdjustingEntry(entry)
     setIsAdjustDialogOpen(true)
   }
@@ -242,7 +243,7 @@ export function TimesheetManagementClient({ user, users }: TimesheetManagementCl
         `${timesheet.user.firstName} ${timesheet.user.lastName}`,
         new Date(timesheet.weekStartDate).toLocaleDateString(),
         new Date(timesheet.weekEndDate).toLocaleDateString(),
-        timesheet.totalHours.toFixed(2),
+        typeof timesheet.totalHours === 'number' ? timesheet.totalHours.toFixed(2) : timesheet.totalHours.toNumber().toFixed(2),
         timesheet.totalEntries.toString(),
         timesheet.status,
         timesheet.submittedAt ? new Date(timesheet.submittedAt).toLocaleDateString() : "-",

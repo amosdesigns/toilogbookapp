@@ -14,6 +14,9 @@ import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Eye, Check, X, Trash2, Send, ChevronLeft, ChevronRight } from "lucide-react"
 import { formatDateTime } from "@/lib/utils"
+import { Prisma } from "@prisma/client"
+
+type Decimal = Prisma.Decimal
 
 const ITEMS_PER_PAGE = 20
 
@@ -22,17 +25,18 @@ interface TimesheetEntry {
   date: Date
   clockInTime: Date
   clockOutTime: Date
-  hoursWorked: number
+  hoursWorked: Decimal | number
   location: {
     name: string
-  }
+  } | null
+  [key: string]: unknown
 }
 
 interface Timesheet {
   id: string
   weekStartDate: Date
   weekEndDate: Date
-  totalHours: number
+  totalHours: Decimal | number
   totalEntries: number
   status: string
   user: {
@@ -54,6 +58,7 @@ interface Timesheet {
   submittedAt?: Date | null
   approvedAt?: Date | null
   rejectedAt?: Date | null
+  [key: string]: unknown
 }
 
 interface TimesheetsTableProps {
@@ -190,7 +195,7 @@ export function TimesheetsTable({
                   {formatWeekRange(timesheet.weekStartDate, timesheet.weekEndDate)}
                 </TableCell>
                 <TableCell>
-                  <span className="font-semibold">{timesheet.totalHours.toFixed(2)}</span> hrs
+                  <span className="font-semibold">{typeof timesheet.totalHours === 'number' ? timesheet.totalHours.toFixed(2) : timesheet.totalHours.toNumber().toFixed(2)}</span> hrs
                 </TableCell>
                 <TableCell>{timesheet.totalEntries}</TableCell>
                 <TableCell>

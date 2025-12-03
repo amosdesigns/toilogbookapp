@@ -3,9 +3,40 @@
 import { auth } from "@clerk/nextjs/server"
 import { prisma } from "@/lib/prisma"
 import { to, type ActionResult } from "@/lib/utils/RenderError"
+import type { Role } from "@prisma/client"
+
+// Type for current user with full profile data
+// Using Prisma-style null for optional fields to match database returns
+export interface CurrentUserData {
+  id: string
+  clerkId: string
+  email: string
+  firstName: string
+  lastName: string
+  role: Role
+  phone?: string | null
+  streetAddress?: string | null
+  city?: string | null
+  state?: string | null
+  zipCode?: string | null
+  createdAt: Date
+  updatedAt: Date
+}
+
+// Type for user list item (subset of fields)
+export interface UserListItem {
+  id: string
+  clerkId: string
+  email: string
+  firstName: string
+  lastName: string
+  role: Role
+  phone?: string | null
+  createdAt: Date
+}
 
 // Get current user from database
-export async function getCurrentUser(): Promise<ActionResult<any>> {
+export async function getCurrentUser(): Promise<ActionResult<CurrentUserData>> {
   try {
     const { userId } = await auth()
 
@@ -44,7 +75,7 @@ export async function getCurrentUser(): Promise<ActionResult<any>> {
 }
 
 // Get all users (for admin/supervisor use)
-export async function getUsers(): Promise<ActionResult<any>> {
+export async function getUsers(): Promise<ActionResult<UserListItem[]>> {
   try {
     const { userId } = await auth()
 

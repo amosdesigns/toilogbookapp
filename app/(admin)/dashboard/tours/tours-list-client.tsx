@@ -19,6 +19,7 @@ import {
 import { ShieldCheck, MapPin, Clock, ChevronRight, AlertCircle } from "lucide-react"
 import { StartTourDialog } from "@/components/tour/start-tour-dialog"
 import type { TourWithSupervisor } from "@/lib/types/prisma-types"
+import type { ActiveLocationData } from "@/lib/actions/location-actions"
 import type { TourStatus } from "@prisma/client"
 
 interface User {
@@ -28,15 +29,10 @@ interface User {
   lastName: string
 }
 
-interface Location {
-  id: string
-  name: string
-}
-
 interface ToursListClientProps {
   user: User
   tours: TourWithSupervisor[]
-  locations: Location[]
+  locations: ActiveLocationData[]
 }
 
 export function ToursListClient({ user, tours, locations }: ToursListClientProps) {

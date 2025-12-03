@@ -15,6 +15,7 @@ import { getUsersWithDutySessions, generateTimesheet } from "@/lib/actions/times
 import { toast } from "sonner"
 import { useRouter } from "next/navigation"
 import { ArrowLeft, Calendar, User as UserIcon } from "lucide-react"
+import type { UserWithDutySessions } from "@/lib/types/prisma-types"
 
 interface User {
   id: string
@@ -31,7 +32,7 @@ export function GenerateTimesheetClient({ user }: GenerateTimesheetClientProps) 
   const router = useRouter()
   const [selectedUserId, setSelectedUserId] = useState<string>("")
   const [selectedWeek, setSelectedWeek] = useState<string>("")
-  const [availableUsers, setAvailableUsers] = useState<any[]>([])
+  const [availableUsers, setAvailableUsers] = useState<UserWithDutySessions[]>([])
   const [isLoadingUsers, setIsLoadingUsers] = useState(false)
   const [isGenerating, setIsGenerating] = useState(false)
 
@@ -69,7 +70,7 @@ export function GenerateTimesheetClient({ user }: GenerateTimesheetClientProps) 
         setIsLoadingUsers(true)
         const result = await getUsersWithDutySessions({ weekStartDate: selectedWeek })
         if (result.ok) {
-          setAvailableUsers(result.data)
+          setAvailableUsers(result.data as UserWithDutySessions[])
         } else {
           toast.error(result.message || "Failed to fetch users")
           setAvailableUsers([])

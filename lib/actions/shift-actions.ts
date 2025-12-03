@@ -4,13 +4,69 @@ import { auth } from "@clerk/nextjs/server"
 import { prisma } from "@/lib/prisma"
 import { revalidatePath } from "next/cache"
 import { to, type ActionResult } from "@/lib/utils/RenderError"
+import type { Prisma } from "@prisma/client"
+
+// Shift with full relations (for display)
+export type ShiftWithRelations = Prisma.ShiftGetPayload<{
+  include: {
+    location: {
+      select: {
+        id: true
+        name: true
+      }
+    }
+    assignments: {
+      include: {
+        user: {
+          select: {
+            id: true
+            firstName: true
+            lastName: true
+            email: true
+            role: true
+          }
+        }
+      }
+    }
+  }
+}>
+
+// Recurring pattern with relations
+export type RecurringPatternWithRelations = Prisma.RecurringShiftPatternGetPayload<{
+  include: {
+    location: {
+      select: {
+        id: true
+        name: true
+      }
+    }
+    userAssignments: {
+      include: {
+        user: {
+          select: {
+            id: true
+            firstName: true
+            lastName: true
+            email: true
+            role: true
+          }
+        }
+      }
+    }
+  }
+}>
+
+// Type for simple message response (delete operations)
+export interface MessageResponse {
+  message: string
+}
 
 // Get shifts with optional filtering
 export async function getShifts(params?: {
   startDate?: string
   endDate?: string
   locationId?: string
-}): Promise<ActionResult<any>> {
+}): Promise<ActionResult<ShiftWithRelations[]>> {
   try {
     const { userId } = await auth()
 
@@ -18,7 +74,7 @@ export async function getShifts(params?: {
       return { ok: false, message: "Unauthorized" }
     }
 
-    const whereClause: any = {}
+    const whereClause: Prisma.ShiftWhereInput = {}
 
     if (params?.startDate || params?.endDate) {
       whereClause.startTime = {}
@@ -76,7 +132,7 @@ export async function createShift(data: {
   endTime: string
   locationId: string
   userAssignments?: Array<{ userId: string; role?: string | null }>
-}): Promise<ActionResult<any>> {
+}): Promise<ActionResult<ShiftWithRelations>> {
   try {
     const { userId } = await auth()
 
@@ -159,7 +215,7 @@ export async function updateShift(
     locationId?: string
     userAssignments?: Array<{ userId: string; role?: string | null }>
   }
-): Promise<ActionResult<any>> {
+): Promise<ActionResult<ShiftWithRelations>> {
   try {
     const { userId } = await auth()
 
@@ -186,11 +242,15 @@ export async function updateShift(
     }
 
     // If user assignments are provided, replace all assignments
-    const updateData: any = {}
+    const updateData: Prisma.ShiftUpdateInput = {}
     if (data.name) updateData.name = data.name
     if (data.startTime) updateData.startTime = new Date(data.startTime)
     if (data.endTime) updateData.endTime = new Date(data.endTime)
-    if (data.locationId) updateData.locationId = data.locationId
+    if (data.locationId) {
+      updateData.location = {
+        connect: { id: data.locationId }
+      }
+    }
 
     if (data.userAssignments !== undefined) {
       // Delete existing assignments and create new ones
@@ -242,7 +302,7 @@ export async function updateShift(
 }
 
 // Delete a shift
-export async function deleteShift(shiftId: string): Promise<ActionResult<any>> {
+export async function deleteShift(shiftId: string): Promise<ActionResult<MessageResponse>> {
   try {
     const { userId } = await auth()
 
@@ -270,7 +330,7 @@ export async function deleteShift(shiftId: string): Promise<ActionResult<any>> {
 
     revalidatePath("/admin/dashboard/shifts")
 
-    return { ok: true, data: null, message: "Shift deleted successfully" }
+    return { ok: true, data: { message: "Shift deleted successfully" } }
   } catch (error) {
     console.error("[DELETE_SHIFT]", error)
     return to(error)
@@ -280,7 +340,7 @@ export async function deleteShift(shiftId: string): Promise<ActionResult<any>> {
 // Get recurring shift patterns
 export async function getRecurringPatterns(
   locationId?: string
-): Promise<ActionResult<any>> {
+): Promise<ActionResult<RecurringPatternWithRelations[]>> {
   try {
     const { userId } = await auth()
 
@@ -288,7 +348,7 @@ export async function getRecurringPatterns(
       return { ok: false, message: "Unauthorized" }
     }
 
-    const whereClause: any = {}
+    const whereClause: Prisma.RecurringShiftPatternWhereInput = {}
     if (locationId) {
       whereClause.locationId = locationId
     }
@@ -338,7 +398,7 @@ export async function createRecurringPattern(data: {
   startDate: string
   endDate?: string
   userAssignments?: Array<{ userId: string; role?: string | null }>
-}): Promise<ActionResult<any>> {
+}): Promise<ActionResult<RecurringPatternWithRelations>> {
   try {
     const { userId } = await auth()
 
@@ -429,7 +489,7 @@ export async function updateRecurringPattern(
     isActive?: boolean
     userAssignments?: Array<{ userId: string; role?: string | null }>
   }
-): Promise<ActionResult<any>> {
+): Promise<ActionResult<RecurringPatternWithRelations>> {
   try {
     const { userId } = await auth()
 
@@ -458,9 +518,13 @@ export async function updateRecurringPattern(
       }
     }
 
-    const updateData: any = {}
+    const updateData: Prisma.RecurringShiftPatternUpdateInput = {}
     if (data.name) updateData.name = data.name
-    if (data.locationId) updateData.locationId = data.locationId
+    if (data.locationId) {
+      updateData.location = {
+        connect: { id: data.locationId }
+      }
+    }
     if (data.startTime) updateData.startTime = data.startTime
     if (data.endTime) updateData.endTime = data.endTime
     if (data.daysOfWeek) updateData.daysOfWeek = JSON.stringify(data.daysOfWeek)
@@ -522,7 +586,7 @@ export async function updateRecurringPattern(
 // Delete a recurring shift pattern
 export async function deleteRecurringPattern(
   patternId: string
-): Promise<ActionResult<any>> {
+): Promise<ActionResult<MessageResponse>> {
   try {
     const { userId } = await auth()
 
@@ -553,7 +617,7 @@ export async function deleteRecurringPattern(
 
     revalidatePath("/admin/dashboard/shifts")
 
-    return { ok: true, data: null, message: "Recurring pattern deleted successfully" }
+    return { ok: true, data: { message: "Recurring pattern deleted successfully" } }
   } catch (error) {
     console.error("[DELETE_RECURRING_PATTERN]", error)
     return to(error)

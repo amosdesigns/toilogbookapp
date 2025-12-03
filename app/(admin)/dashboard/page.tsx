@@ -13,20 +13,20 @@ import { LocationLogbookViewer } from "@/components/supervisor/location-logbook-
 import { ActiveTourCard } from "@/components/tour/active-tour-card"
 import { FileText, Calendar, MapPin, Users } from "lucide-react"
 import { toast } from "sonner"
-import { getActiveLocations } from "@/lib/actions/location-actions"
+import { getActiveLocations, type ActiveLocationData } from "@/lib/actions/location-actions"
 import { getActiveDutySession, clockIn, clockOut, createLocationCheckIn } from "@/lib/actions/duty-session-actions"
 import { getGuardsOnDuty } from "@/lib/actions/guards-actions"
 import { getIncidents } from "@/lib/actions/log-actions"
 import { reviewIncident } from "@/lib/actions/incident-actions"
 import { getTours } from "@/lib/actions/tour-actions"
 import { getErrorMessage, type CatchError } from "@/lib/utils/error-handler"
-import type { DutySession, Location, GuardOnDuty, IncidentReport, UserRole } from "@/lib/types"
+import type { DutySession, GuardOnDuty, IncidentReport, UserRole } from "@/lib/types"
 import type { TourWithSupervisor } from "@/lib/types/prisma-types"
 
 export default function AdminDashboardPage() {
   const { user } = useUser()
   const [dutySession, setDutySession] = useState<DutySession | null>(null)
-  const [locations, setLocations] = useState<Location[]>([])
+  const [locations, setLocations] = useState<ActiveLocationData[]>([])
   const [guardsOnDuty, setGuardsOnDuty] = useState<GuardOnDuty[]>([])
   const [incidents, setIncidents] = useState<IncidentReport[]>([])
   const [selectedIncident, setSelectedIncident] = useState<IncidentReport | null>(null)

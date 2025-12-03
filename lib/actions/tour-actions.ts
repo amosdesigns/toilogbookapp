@@ -242,7 +242,7 @@ export async function createTourStop(data: {
       data: {
         tourId: validation.data.tourId,
         locationId: validation.data.locationId,
-        stopType: validation.data.stopType as any,
+        stopType: validation.data.stopType,
         title: validation.data.title,
         observations: validation.data.observations,
         photoUrls: validation.data.photoUrls ? JSON.stringify(validation.data.photoUrls) : null,
