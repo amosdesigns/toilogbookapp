@@ -106,6 +106,20 @@ enum AlertPriority {
   CRITICAL
 }
 
+enum TourStatus {
+  DRAFT
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum TourStopType {
+  LOCATION_INSPECTION
+  GUARD_EVALUATION
+  INCIDENT_CHECK
+  GENERAL_OBSERVATION
+}
+
 // Models
 model User {
   id            String  @id @default(cuid())
@@ -155,6 +169,10 @@ model User {
   // Log Edit relations
   logEdits LogEdit[]
 
+  // Tour relations
+  tours            Tour[]
+  tourStopsAsGuard TourStop[] @relation("TourStopGuard")
+
   @@index([username])
   @@index([clerkId])
   @@index([email])
@@ -184,6 +202,7 @@ model Location {
   safetyChecklistResponses SafetyChecklistResponse[]
   timesheetEntries         TimesheetEntry[]
   incidentReports          IncidentReport[]
+  tourStops                TourStop[]
 
   @@index([name])
 }
@@ -939,4 +958,79 @@ model LogEdit {
 
   @@index([logId])
   @@index([editedBy])
+}
+
+// ============================================================================
+// SUPERVISOR TOUR WORKFLOW MODELS
+// ============================================================================
+
+// Supervisor tours with equipment checkout/checkin tracking
+model Tour {
+  id           String     @id @default(cuid())
+  supervisorId String
+  title        String?    @db.VarChar(255)
+  status       TourStatus @default(IN_PROGRESS)
+  notes        String?    @db.Text
+
+  // Equipment Checkout (at tour start)
+  carNumber       String @db.VarChar(50)
+  radioNumber     String @db.VarChar(50)
+  startingMileage Int
+
+  // Equipment Checkin (at tour end)
+  endingMileage Int?
+  carReturned   Boolean @default(false)
+  radioReturned Boolean @default(false)
+  keysReturned  Boolean @default(false)
+
+  // Timestamps
+  startedAt   DateTime  @default(now())
+  completedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  // Relations
+  supervisor User       @relation(fields: [supervisorId], references: [id], onDelete: Cascade)
+  tourStops  TourStop[]
+
+  @@index([supervisorId])
+  @@index([status])
+  @@index([startedAt])
+}
+
+// Individual stops during a supervisor tour
+model TourStop {
+  id          String       @id @default(cuid())
+  tourId      String
+  locationId  String?
+  stopType    TourStopType @default(GENERAL_OBSERVATION)
+
+  // Observation data
+  title        String  @db.VarChar(255)
+  observations String  @db.Text
+  photoUrls    String? @db.Text // JSON array of photo URLs
+
+  // Guard evaluation (optional)
+  guardUserId           String?
+  guardPerformanceNotes String? @db.Text
+
+  // Issue reporting (optional)
+  issuesSeverity   String? @db.VarChar(20) // LOW, MEDIUM, HIGH, CRITICAL
+  followUpRequired Boolean @default(false)
+
+  // Timestamps
+  arrivedAt  DateTime  @default(now())
+  departedAt DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  // Relations
+  tour      Tour      @relation(fields: [tourId], references: [id], onDelete: Cascade)
+  location  Location? @relation(fields: [locationId], references: [id], onDelete: SetNull)
+  guardUser User?     @relation("TourStopGuard", fields: [guardUserId], references: [id], onDelete: SetNull)
+
+  @@index([tourId])
+  @@index([locationId])
+  @@index([guardUserId])
+  @@index([arrivedAt])
 }

@@ -90,8 +90,8 @@ export function GuardsOnDutyTable({ guards, onRefresh }: GuardsOnDutyTableProps)
       setIsSending(true)
       const result = await supervisorClockOut(selectedGuard.dutySessionId)
 
-      if (!result.success) {
-        throw new Error(result.error || "Failed to end duty session")
+      if (!result.ok) {
+        throw new Error(result.message || "Failed to end duty session")
       }
 
       toast.success(`Duty session ended for ${selectedGuard.userName}`)

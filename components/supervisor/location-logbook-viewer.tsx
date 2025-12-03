@@ -59,8 +59,8 @@ export function LocationLogbookViewer({ locations }: LocationLogbookViewerProps)
     try {
       setIsLoading(true)
       const result = await getLogsByLocation(locationId, 20)
-      if (result.success) {
-        setLogs(result.logs)
+      if (result.ok) {
+        setLogs(result.data)
       }
     } catch (error) {
       console.error("Failed to fetch logs:", error)

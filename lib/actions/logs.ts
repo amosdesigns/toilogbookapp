@@ -6,6 +6,12 @@ import { getCurrentUser } from '@/lib/auth/sync-user'
 import { canManageResource } from '@/lib/utils/auth'
 import { createLogSchema, updateLogSchema } from '@/lib/validations/log'
 import { to, type ActionResult } from '@/lib/utils/RenderError'
+import { Prisma, LogType, RecordStatus } from '@prisma/client'
+import { z } from 'zod'
+import type { LogWithRelations, LogWithFullRelations, LogWithLocationAndUser } from '@/lib/types/prisma-types'
+
+type CreateLogInput = z.infer<typeof createLogSchema>
+type UpdateLogInput = z.infer<typeof updateLogSchema>
 
 interface GetLogsParams {
   locationId?: string
@@ -17,7 +23,7 @@ interface GetLogsParams {
   status?: string
 }
 
-export async function getLogs(params: GetLogsParams = {}): Promise<ActionResult<any[]>> {
+export async function getLogs(params: GetLogsParams = {}): Promise<ActionResult<LogWithRelations[]>> {
   try {
     const user = await getCurrentUser()
     if (!user) {
@@ -27,7 +33,7 @@ export async function getLogs(params: GetLogsParams = {}): Promise<ActionResult<
     const { locationId, search, year, month, type, status } = params
 
     // Build the where clause
-    const where: any = {
+    const where: Prisma.LogWhereInput = {
       archivedAt: null, // Don't show archived logs
     }
 
@@ -43,16 +49,16 @@ export async function getLogs(params: GetLogsParams = {}): Promise<ActionResult<
     }
 
     if (type) {
-      where.type = type
+      where.type = type as LogType
     }
 
     if (status) {
-      where.status = status
+      where.status = status as RecordStatus
     }
 
     // Date filters
     if (year || month) {
-      const dateConditions: any = {}
+      const dateConditions: Prisma.DateTimeFilter = {}
 
       if (year) {
         const yearNum = parseInt(year)
@@ -99,7 +105,7 @@ export async function getLogs(params: GetLogsParams = {}): Promise<ActionResult<
   }
 }
 
-export async function getLogById(id: string): Promise<ActionResult<any>> {
+export async function getLogById(id: string): Promise<ActionResult<LogWithFullRelations>> {
   try {
     const user = await getCurrentUser()
     if (!user) {
@@ -139,7 +145,7 @@ export async function getLogById(id: string): Promise<ActionResult<any>> {
   }
 }
 
-export async function updateLog(id: string, data: any): Promise<ActionResult<any>> {
+export async function updateLog(id: string, data: UpdateLogInput): Promise<ActionResult<LogWithLocationAndUser>> {
   try {
     const user = await getCurrentUser()
     if (!user) {
@@ -197,7 +203,7 @@ export async function updateLog(id: string, data: any): Promise<ActionResult<any
   }
 }
 
-export async function createLog(data: any): Promise<ActionResult<any>> {
+export async function createLog(data: CreateLogInput): Promise<ActionResult<LogWithLocationAndUser>> {
   try {
     const user = await getCurrentUser()
     if (!user) {

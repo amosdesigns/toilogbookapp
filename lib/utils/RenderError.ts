@@ -62,4 +62,5 @@ export const to  = (
 // Action result type
 export type ActionResult<T> =
   | { ok: true; data: T; message?: string; meta?: Record<string, unknown> }
+  
   | { ok: false; message: string; data?: never; code?: string; meta?: Record<string, unknown> };

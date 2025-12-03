@@ -174,6 +174,30 @@ export type ShiftWithRelations = Prisma.ShiftGetPayload<{
   }
 }>
 
+export type ShiftWithAssignments = Prisma.ShiftGetPayload<{
+  include: {
+    location: {
+      select: {
+        id: true
+        name: true
+      }
+    }
+    assignments: {
+      include: {
+        user: {
+          select: {
+            id: true
+            firstName: true
+            lastName: true
+            email: true
+            role: true
+          }
+        }
+      }
+    }
+  }
+}>
+
 // ============================================================================
 // Message Types (for messaging system)
 // ============================================================================
@@ -218,6 +242,98 @@ export type IncidentWithDetails = Prisma.LogGetPayload<{
     location: {
       select: {
         name: true
+      }
+    }
+  }
+}>
+
+// ============================================================================
+// Tour Types
+// ============================================================================
+
+export type TourWithStops = Prisma.TourGetPayload<{
+  include: {
+    tourStops: {
+      include: {
+        location: {
+          select: {
+            id: true
+            name: true
+          }
+        }
+      }
+    }
+  }
+}>
+
+export type TourWithSupervisor = Prisma.TourGetPayload<{
+  include: {
+    supervisor: {
+      select: {
+        id: true
+        firstName: true
+        lastName: true
+        email: true
+      }
+    }
+    tourStops: {
+      include: {
+        location: {
+          select: {
+            id: true
+            name: true
+          }
+        }
+      }
+    }
+  }
+}>
+
+export type TourWithFullRelations = Prisma.TourGetPayload<{
+  include: {
+    supervisor: {
+      select: {
+        id: true
+        firstName: true
+        lastName: true
+        email: true
+      }
+    }
+    tourStops: {
+      include: {
+        location: {
+          select: {
+            id: true
+            name: true
+          }
+        }
+        guardUser: {
+          select: {
+            id: true
+            firstName: true
+            lastName: true
+            role: true
+          }
+        }
+      }
+    }
+  }
+}>
+
+export type TourStopWithRelations = Prisma.TourStopGetPayload<{
+  include: {
+    location: {
+      select: {
+        id: true
+        name: true
+      }
+    }
+    guardUser: {
+      select: {
+        id: true
+        firstName: true
+        lastName: true
+        role: true
       }
     }
   }

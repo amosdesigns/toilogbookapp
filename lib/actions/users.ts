@@ -5,8 +5,13 @@ import { prisma } from '@/lib/prisma'
 import { getCurrentUser } from '@/lib/auth/sync-user'
 import { to, type ActionResult } from '@/lib/utils/RenderError'
 import { updateProfileSchema } from '@/lib/validations/user'
+import { z } from 'zod'
+import type { User } from '@prisma/client'
+import type { UserProfile } from '@/lib/types/prisma-types'
 
-export async function getCurrentUserAction(): Promise<ActionResult<any>> {
+type UpdateProfileInput = z.infer<typeof updateProfileSchema>
+
+export async function getCurrentUserAction(): Promise<ActionResult<User>> {
   try {
     const user = await getCurrentUser()
 
@@ -21,7 +26,7 @@ export async function getCurrentUserAction(): Promise<ActionResult<any>> {
   }
 }
 
-export async function getUserById(userId: string): Promise<ActionResult<any>> {
+export async function getUserById(userId: string): Promise<ActionResult<UserProfile>> {
   try {
     const currentUser = await getCurrentUser()
     if (!currentUser) {
@@ -60,8 +65,8 @@ export async function getUserById(userId: string): Promise<ActionResult<any>> {
 
 export async function updateUserProfile(
   userId: string,
-  data: any
-): Promise<ActionResult<any>> {
+  data: UpdateProfileInput
+): Promise<ActionResult<UserProfile>> {
   try {
     const currentUser = await getCurrentUser()
     if (!currentUser) {
@@ -100,6 +105,7 @@ export async function updateUserProfile(
         state: true,
         zipCode: true,
         role: true,
+        createdAt: true,
       },
     })
 
