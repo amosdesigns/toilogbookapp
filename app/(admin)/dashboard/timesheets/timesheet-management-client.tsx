@@ -30,7 +30,7 @@ import {
 } from "@/components/ui/dialog"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
-import type { TimesheetWithRelations, TimesheetWithFullDetails, TimesheetEntryWithLocation } from "@/lib/types/prisma-types"
+import type { TimesheetWithRelations, TimesheetWithFullDetails, TimesheetEntryWithFullDetails } from "@/lib/types/prisma-types"
 
 interface User {
   id: string
@@ -57,7 +57,7 @@ export function TimesheetManagementClient({ user, users }: TimesheetManagementCl
   const [selectedIds, setSelectedIds] = useState<string[]>([])
   const [isBulkApproving, setIsBulkApproving] = useState(false)
   const [isAdjustDialogOpen, setIsAdjustDialogOpen] = useState(false)
-  const [adjustingEntry, setAdjustingEntry] = useState<TimesheetEntryWithLocation | null>(null)
+  const [adjustingEntry, setAdjustingEntry] = useState<TimesheetEntryWithFullDetails | null>(null)
 
   // Fetch timesheets whenever filters change
   useEffect(() => {
@@ -65,7 +65,7 @@ export function TimesheetManagementClient({ user, users }: TimesheetManagementCl
       setIsLoading(true)
       const result = await getTimesheets(filters)
       if (result.ok) {
-        setTimesheets(result.data)
+        setTimesheets(result.data as TimesheetWithRelations[])
       } else {
         toast.error(result.message || "Failed to fetch timesheets")
       }
@@ -78,7 +78,7 @@ export function TimesheetManagementClient({ user, users }: TimesheetManagementCl
   const handleViewTimesheet = async (timesheetId: string) => {
     const result = await getTimesheetById(timesheetId)
     if (result.ok) {
-      setSelectedTimesheet(result.data)
+      setSelectedTimesheet(result.data as TimesheetWithFullDetails)
       setIsDetailDialogOpen(true)
     } else {
       toast.error(result.message || "Failed to load timesheet details")
@@ -94,7 +94,7 @@ export function TimesheetManagementClient({ user, users }: TimesheetManagementCl
       // Refresh timesheets
       const updatedTimesheets = await getTimesheets(filters)
       if (updatedTimesheets.ok) {
-        setTimesheets(updatedTimesheets.data)
+        setTimesheets(updatedTimesheets.data as TimesheetWithRelations[])
       }
     } else {
       toast.error(result.message || "Failed to submit timesheet")
@@ -110,7 +110,7 @@ export function TimesheetManagementClient({ user, users }: TimesheetManagementCl
       // Refresh timesheets
       const updatedTimesheets = await getTimesheets(filters)
       if (updatedTimesheets.ok) {
-        setTimesheets(updatedTimesheets.data)
+        setTimesheets(updatedTimesheets.data as TimesheetWithRelations[])
       }
     } else {
       toast.error(result.message || "Failed to approve timesheet")
@@ -140,7 +140,7 @@ export function TimesheetManagementClient({ user, users }: TimesheetManagementCl
       // Refresh timesheets
       const updatedTimesheets = await getTimesheets(filters)
       if (updatedTimesheets.ok) {
-        setTimesheets(updatedTimesheets.data)
+        setTimesheets(updatedTimesheets.data as TimesheetWithRelations[])
       }
     } else {
       toast.error(result.message || "Failed to reject timesheet")
@@ -156,7 +156,7 @@ export function TimesheetManagementClient({ user, users }: TimesheetManagementCl
       // Refresh timesheets
       const updatedTimesheets = await getTimesheets(filters)
       if (updatedTimesheets.ok) {
-        setTimesheets(updatedTimesheets.data)
+        setTimesheets(updatedTimesheets.data as TimesheetWithRelations[])
       }
     } else {
       toast.error(result.message || "Failed to delete timesheet")
@@ -192,14 +192,14 @@ export function TimesheetManagementClient({ user, users }: TimesheetManagementCl
       setSelectedIds([])
       const updatedTimesheets = await getTimesheets(filters)
       if (updatedTimesheets.ok) {
-        setTimesheets(updatedTimesheets.data)
+        setTimesheets(updatedTimesheets.data as TimesheetWithRelations[])
       }
     } else {
       toast.error(result.message || "Failed to bulk approve timesheets")
     }
   }
 
-  const handleAdjustEntry = (entry: TimesheetEntryWithLocation) => {
+  const handleAdjustEntry = (entry: TimesheetEntryWithFullDetails) => {
     setAdjustingEntry(entry)
     setIsAdjustDialogOpen(true)
   }
@@ -221,14 +221,14 @@ export function TimesheetManagementClient({ user, users }: TimesheetManagementCl
       if (selectedTimesheet) {
         const refreshed = await getTimesheetById(selectedTimesheet.id)
         if (refreshed.ok) {
-          setSelectedTimesheet(refreshed.data)
+          setSelectedTimesheet(refreshed.data as TimesheetWithFullDetails)
         }
       }
 
       // Refresh the timesheets list
       const updatedTimesheets = await getTimesheets(filters)
       if (updatedTimesheets.ok) {
-        setTimesheets(updatedTimesheets.data)
+        setTimesheets(updatedTimesheets.data as TimesheetWithRelations[])
       }
     } else {
       toast.error(result.message || "Failed to adjust entry")
@@ -243,7 +243,7 @@ export function TimesheetManagementClient({ user, users }: TimesheetManagementCl
         `${timesheet.user.firstName} ${timesheet.user.lastName}`,
         new Date(timesheet.weekStartDate).toLocaleDateString(),
         new Date(timesheet.weekEndDate).toLocaleDateString(),
-        typeof timesheet.totalHours === 'number' ? timesheet.totalHours.toFixed(2) : timesheet.totalHours.toNumber().toFixed(2),
+        String(timesheet.totalHours),
         timesheet.totalEntries.toString(),
         timesheet.status,
         timesheet.submittedAt ? new Date(timesheet.submittedAt).toLocaleDateString() : "-",

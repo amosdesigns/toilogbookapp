@@ -431,6 +431,22 @@ export type TimesheetEntryWithLocation = Prisma.TimesheetEntryGetPayload<{
   }
 }>
 
+export type TimesheetEntryWithFullDetails = Prisma.TimesheetEntryGetPayload<{
+  include: {
+    location: {
+      select: {
+        name: true
+      }
+    }
+    shift: {
+      select: {
+        name: true
+      }
+    }
+    dutySession: true
+  }
+}>
+
 export type UserWithDutySessions = {
   id: string
   firstName: string

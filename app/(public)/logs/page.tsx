@@ -826,10 +826,10 @@ export default function LogsPage() {
               defaultValues={{
                 title: selectedLog.title,
                 description: selectedLog.description,
-                type: selectedLog.type,
+                type: selectedLog.type as "INCIDENT" | "PATROL" | "VISITOR_CHECKIN" | "MAINTENANCE" | "WEATHER" | "OTHER",
                 status: selectedLog.status,
                 locationId: selectedLog.locationId,
-                shiftId: selectedLog.shiftId,
+                shiftId: selectedLog.shiftId || undefined,
               }}
               locations={locations}
             />

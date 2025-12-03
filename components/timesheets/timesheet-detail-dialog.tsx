@@ -21,25 +21,10 @@ import {
 import { formatDateTime } from "@/lib/utils"
 import { Calendar, Clock, User, MapPin, AlertCircle, Edit } from "lucide-react"
 import { Prisma } from "@prisma/client"
+import { type TimesheetEntryWithFullDetails } from "@/lib/types/prisma-types"
 
 type Decimal = Prisma.Decimal
-
-interface TimesheetEntry {
-  id: string
-  date: Date
-  clockInTime: Date
-  clockOutTime: Date
-  hoursWorked: Decimal | number
-  location: {
-    name: string
-  }
-  shift?: {
-    name: string
-  } | null
-  wasAdjusted: boolean
-  wasManuallyAdded: boolean
-  originalHours?: Decimal | number
-}
+type TimesheetEntry = TimesheetEntryWithFullDetails
 
 interface TimesheetAdjustment {
   id: string
@@ -190,7 +175,7 @@ export function TimesheetDetailDialog({
                       <TableCell>
                         <div className="flex items-center gap-1">
                           <MapPin className="h-3 w-3 text-muted-foreground" />
-                          {entry.location.name}
+                          {entry.location?.name || 'N/A'}
                         </div>
                       </TableCell>
                       <TableCell>{formatTime(entry.clockInTime)}</TableCell>
@@ -198,7 +183,7 @@ export function TimesheetDetailDialog({
                       <TableCell>
                         <div className="flex items-center gap-2">
                           <span className="font-semibold">
-                            {typeof entry.hoursWorked === 'number' ? entry.hoursWorked.toFixed(2) : entry.hoursWorked.toNumber().toFixed(2)}
+                            {Number(entry.hoursWorked).toFixed(2)}
                           </span>
                           {entry.wasAdjusted && (
                             <Badge variant="outline" className="text-xs">

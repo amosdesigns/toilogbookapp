@@ -47,7 +47,7 @@ export default function ShiftsPage() {
       })
 
       if (shiftsResult.ok && shiftsResult.data) {
-        setShifts(shiftsResult.data)
+        setShifts(shiftsResult.data as unknown as Shift[])
       } else {
         toast.error('Failed to load shifts')
       }

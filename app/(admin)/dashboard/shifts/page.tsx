@@ -93,7 +93,7 @@ export default function ShiftsPage() {
       // Fetch locations
       const locationsResult = await getActiveLocations()
       if (locationsResult.ok && locationsResult.data) {
-        setLocations(locationsResult.data)
+        setLocations(locationsResult.data as Location[])
       } else {
         toast.error(locationsResult.message || 'Failed to load locations')
       }
@@ -135,7 +135,7 @@ export default function ShiftsPage() {
       })
 
       if (shiftsResult.ok && shiftsResult.data) {
-        setShifts(shiftsResult.data)
+        setShifts(shiftsResult.data as unknown as Shift[])
       } else {
         toast.error(shiftsResult.message || 'Failed to load shifts')
       }
