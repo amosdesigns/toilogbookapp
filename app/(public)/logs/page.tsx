@@ -35,25 +35,9 @@ import { getLogs, getLogById, updateLog, deleteLog, createLog } from "@/lib/acti
 import { getCurrentUserAction } from "@/lib/actions/users"
 import { getActiveLocations } from "@/lib/actions/locations"
 import { getActiveDutySession } from "@/lib/actions/duty-session-actions"
-
-interface Log {
-  id: string
-  type: string
-  title: string
-  description: string
-  status: string
-  severity: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL" | null
-  locationId: string
-  userId: string
-  createdAt: Date
-  location: {
-    name: string
-  }
-  user: {
-    firstName: string
-    lastName: string
-  }
-}
+import type { LogWithRelations, LogWithFullRelations } from "@/lib/types/prisma-types"
+import type { User } from "@prisma/client"
+import type { DutySessionWithCheckIns } from "@/lib/types/prisma-types"
 
 const severityColors = {
   LOW: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
@@ -72,11 +56,11 @@ const typeColors = {
 }
 
 export default function LogsPage() {
-  const [logs, setLogs] = useState<Log[]>([])
-  const [filteredLogs, setFilteredLogs] = useState<Log[]>([])
+  const [logs, setLogs] = useState<LogWithRelations[]>([])
+  const [filteredLogs, setFilteredLogs] = useState<LogWithRelations[]>([])
   const [locations, setLocations] = useState<Array<{ id: string; name: string }>>([])
   const [loading, setLoading] = useState(true)
-  const [currentUser, setCurrentUser] = useState<any>(null)
+  const [currentUser, setCurrentUser] = useState<User | null>(null)
   const [isMounted, setIsMounted] = useState(false)
   const [currentLocationId, setCurrentLocationId] = useState<string | null>(null)
   const [currentLocationName, setCurrentLocationName] = useState<string>("")
@@ -100,8 +84,8 @@ export default function LogsPage() {
   const [viewDialogOpen, setViewDialogOpen] = useState(false)
   const [editDialogOpen, setEditDialogOpen] = useState(false)
   const [createDialogOpen, setCreateDialogOpen] = useState(false)
-  const [selectedLog, setSelectedLog] = useState<any>(null)
-  const [activeDutySession, setActiveDutySession] = useState<any>(null)
+  const [selectedLog, setSelectedLog] = useState<LogWithFullRelations | null>(null)
+  const [activeDutySession, setActiveDutySession] = useState<DutySessionWithCheckIns | null>(null)
 
   useEffect(() => {
     setIsMounted(true)
@@ -333,7 +317,7 @@ export default function LogsPage() {
     }
   }
 
-  const canManageLog = (log: Log) => {
+  const canManageLog = (log: LogWithRelations) => {
     if (!currentUser) return false
 
     // Guards can ONLY edit their own logs - very important!
@@ -842,10 +826,10 @@ export default function LogsPage() {
               defaultValues={{
                 title: selectedLog.title,
                 description: selectedLog.description,
-                type: selectedLog.type,
+                type: selectedLog.type as "INCIDENT" | "PATROL" | "VISITOR_CHECKIN" | "MAINTENANCE" | "WEATHER" | "OTHER",
                 status: selectedLog.status,
                 locationId: selectedLog.locationId,
-                shiftId: selectedLog.shiftId,
+                shiftId: selectedLog.shiftId || undefined,
               }}
               locations={locations}
             />

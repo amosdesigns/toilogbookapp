@@ -7,14 +7,16 @@ import { ProfileForm } from '@/components/forms/profile-form'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { toast } from 'sonner'
 import { Loader2 } from 'lucide-react'
+import type { UserProfile } from '@/lib/types/prisma-types'
+import type { User } from '@prisma/client'
 
 export default function EditProfilePage() {
   const router = useRouter()
   const params = useParams()
   const userId = params.id as string
 
-  const [user, setUser] = useState<any>(null)
-  const [currentUser, setCurrentUser] = useState<any>(null)
+  const [user, setUser] = useState<UserProfile | null>(null)
+  const [currentUser, setCurrentUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -56,7 +58,16 @@ export default function EditProfilePage() {
     fetchUser()
   }, [userId])
 
-  const handleSubmit = async (data: any) => {
+  const handleSubmit = async (data: {
+    firstName: string
+    lastName: string
+    imageUrl?: string | null
+    phone?: string | null
+    streetAddress?: string | null
+    city?: string | null
+    state?: string | null
+    zipCode?: string | null
+  }) => {
     const result = await updateUserProfile(userId, data)
 
     if (!result.ok) {

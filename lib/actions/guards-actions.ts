@@ -2,9 +2,22 @@
 
 import { auth } from "@clerk/nextjs/server"
 import { prisma } from "@/lib/prisma"
-import { to, type Result } from "@/lib/utils/RenderError"
+import { to, type ActionResult } from "@/lib/utils/RenderError"
+import type { Role } from "@prisma/client"
 
-export async function getGuardsOnDuty(): Promise<Result<any>> {
+export interface GuardOnDutyData {
+  userId: string
+  userName: string
+  userEmail: string
+  role: Role
+  dutySessionId: string
+  locationId: string | null
+  locationName: string | null
+  clockInTime: Date
+  hoursOnDuty: string
+}
+
+export async function getGuardsOnDuty(): Promise<ActionResult<GuardOnDutyData[]>> {
   try {
     const { userId } = await auth()
 

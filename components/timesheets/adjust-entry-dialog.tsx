@@ -14,20 +14,10 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Calendar } from "lucide-react"
-
-interface TimesheetEntry {
-  id: string
-  date: Date
-  clockInTime: Date
-  clockOutTime: Date
-  hoursWorked: number
-  location: {
-    name: string
-  }
-}
+import { type TimesheetEntryWithFullDetails } from "@/lib/types/prisma-types"
 
 interface AdjustEntryDialogProps {
-  entry: TimesheetEntry | null
+  entry: TimesheetEntryWithFullDetails | null
   open: boolean
   onOpenChange: (open: boolean) => void
   onConfirm: (data: {
@@ -133,7 +123,7 @@ export function AdjustEntryDialog({
               <span className="font-medium">{formatDate(entry.date)}</span>
             </div>
             <p className="text-sm text-muted-foreground">
-              {entry.location.name}
+              {entry.location?.name || 'N/A'}
             </p>
           </div>
 
@@ -149,7 +139,7 @@ export function AdjustEntryDialog({
             </div>
             <div className="col-span-2">
               <p className="text-xs text-muted-foreground mb-1">Original Hours</p>
-              <p className="font-medium">{entry.hoursWorked.toFixed(2)} hours</p>
+              <p className="font-medium">{Number(entry.hoursWorked).toFixed(2)} hours</p>
             </div>
           </div>
 

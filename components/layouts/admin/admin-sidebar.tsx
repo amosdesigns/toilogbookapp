@@ -6,6 +6,7 @@ import {
   LayoutDashboard,
   FileText,
   Calendar,
+  MessageSquare,
   Users,
   Settings,
   LogOut,
@@ -46,6 +47,11 @@ const navItems = [
     title: "Logs",
     href: "/dashboard/logs",
     icon: FileText,
+  },
+  {
+    title: "Messages",
+    href: "/dashboard/messages",
+    icon: MessageSquare,
   },
   {
     title: "Shifts",

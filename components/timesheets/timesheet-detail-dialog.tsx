@@ -20,23 +20,11 @@ import {
 } from "@/components/ui/table"
 import { formatDateTime } from "@/lib/utils"
 import { Calendar, Clock, User, MapPin, AlertCircle, Edit } from "lucide-react"
+import { Prisma } from "@prisma/client"
+import { type TimesheetEntryWithFullDetails } from "@/lib/types/prisma-types"
 
-interface TimesheetEntry {
-  id: string
-  date: Date
-  clockInTime: Date
-  clockOutTime: Date
-  hoursWorked: number
-  location: {
-    name: string
-  }
-  shift?: {
-    name: string
-  } | null
-  wasAdjusted: boolean
-  wasManuallyAdded: boolean
-  originalHours?: number
-}
+type Decimal = Prisma.Decimal
+type TimesheetEntry = TimesheetEntryWithFullDetails
 
 interface TimesheetAdjustment {
   id: string
@@ -52,7 +40,7 @@ interface Timesheet {
   id: string
   weekStartDate: Date
   weekEndDate: Date
-  totalHours: number
+  totalHours: Decimal | number
   totalEntries: number
   status: string
   user: {
@@ -148,7 +136,7 @@ export function TimesheetDetailDialog({
               <Clock className="h-4 w-4 text-muted-foreground" />
               <div>
                 <p className="text-sm text-muted-foreground">Total Hours</p>
-                <p className="text-lg font-semibold">{timesheet.totalHours.toFixed(2)}</p>
+                <p className="text-lg font-semibold">{typeof timesheet.totalHours === 'number' ? timesheet.totalHours.toFixed(2) : timesheet.totalHours.toNumber().toFixed(2)}</p>
               </div>
             </div>
             <div className="flex items-center gap-2">
@@ -187,7 +175,7 @@ export function TimesheetDetailDialog({
                       <TableCell>
                         <div className="flex items-center gap-1">
                           <MapPin className="h-3 w-3 text-muted-foreground" />
-                          {entry.location.name}
+                          {entry.location?.name || 'N/A'}
                         </div>
                       </TableCell>
                       <TableCell>{formatTime(entry.clockInTime)}</TableCell>
@@ -195,7 +183,7 @@ export function TimesheetDetailDialog({
                       <TableCell>
                         <div className="flex items-center gap-2">
                           <span className="font-semibold">
-                            {entry.hoursWorked.toFixed(2)}
+                            {Number(entry.hoursWorked).toFixed(2)}
                           </span>
                           {entry.wasAdjusted && (
                             <Badge variant="outline" className="text-xs">

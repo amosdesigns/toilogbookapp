@@ -2,7 +2,7 @@
 
 import { auth } from "@clerk/nextjs/server"
 import { prisma } from "@/lib/prisma"
-import { to, type Result } from "@/lib/utils/RenderError"
+import { to, type ActionResult } from "@/lib/utils/RenderError"
 import { revalidatePath } from "next/cache"
 import type { UserRole } from "@/lib/types"
 
@@ -31,7 +31,7 @@ export async function getAllUsersForManagement(
   searchTerm?: string,
   page = 1,
   pageSize = 25
-): Promise<Result<{ users: UserManagementData[]; total: number }>> {
+): Promise<ActionResult<{ users: UserManagementData[]; total: number }>> {
   try {
     const { userId } = await auth()
 
@@ -113,7 +113,7 @@ export async function getAllUsersForManagement(
 export async function updateUserRole(
   userId: string,
   newRole: UserRole
-): Promise<Result<UserManagementData>> {
+): Promise<ActionResult<UserManagementData>> {
   try {
     const { userId: currentUserId } = await auth()
 
@@ -183,7 +183,7 @@ export async function updateUserRole(
 }
 
 // Archive user (ADMIN and SUPER_ADMIN only)
-export async function archiveUser(userId: string): Promise<Result<UserManagementData>> {
+export async function archiveUser(userId: string): Promise<ActionResult<UserManagementData>> {
   try {
     const { userId: currentUserId } = await auth()
 
@@ -258,7 +258,7 @@ export async function archiveUser(userId: string): Promise<Result<UserManagement
 }
 
 // Unarchive user (SUPER_ADMIN only)
-export async function unarchiveUser(userId: string): Promise<Result<UserManagementData>> {
+export async function unarchiveUser(userId: string): Promise<ActionResult<UserManagementData>> {
   try {
     const { userId: currentUserId } = await auth()
 

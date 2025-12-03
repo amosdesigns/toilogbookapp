@@ -10,6 +10,7 @@ import { Card } from "@/components/ui/card"
 import { Download, Plus } from "lucide-react"
 import { toast } from "sonner"
 import { useRouter } from "next/navigation"
+import type { LogWithRelations, LogWithFullRelations } from "@/lib/types/prisma-types"
 
 interface User {
   id: string
@@ -31,8 +32,8 @@ interface LogManagementClientProps {
 export function LogManagementClient({ user, locations }: LogManagementClientProps) {
   const router = useRouter()
   const [filters, setFilters] = useState<LogFiltersType>({})
-  const [logs, setLogs] = useState<any[]>([])
-  const [selectedLog, setSelectedLog] = useState<any | null>(null)
+  const [logs, setLogs] = useState<LogWithRelations[]>([])
+  const [selectedLog, setSelectedLog] = useState<LogWithFullRelations | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isDetailDialogOpen, setIsDetailDialogOpen] = useState(false)
 

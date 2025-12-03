@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Home, FileText, Calendar, User } from "lucide-react"
+import { Home, FileText, Calendar, MessageSquare, User } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 const navItems = [
@@ -20,6 +20,11 @@ const navItems = [
     title: "Shifts",
     href: "/shifts",
     icon: Calendar,
+  },
+  {
+    title: "Messages",
+    href: "/messages",
+    icon: MessageSquare,
   },
   {
     title: "Profile",

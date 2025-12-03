@@ -23,7 +23,7 @@ import {
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { toast } from "sonner"
-import { sendMessage as sendMessageAction } from "@/lib/actions/message-actions"
+import { sendSupervisorReply } from "@/lib/actions/message-actions"
 import { supervisorClockOut } from "@/lib/actions/duty-session-actions"
 import { getErrorMessage, type CatchError } from "@/lib/utils/error-handler"
 
@@ -67,10 +67,10 @@ export function GuardsOnDutyTable({ guards, onRefresh }: GuardsOnDutyTableProps)
 
     try {
       setIsSending(true)
-      const result = await sendMessageAction(selectedGuard.userId, message.trim())
+      const result = await sendSupervisorReply(selectedGuard.userId, message.trim())
 
-      if (!result.success) {
-        throw new Error(result.error || "Failed to send message")
+      if (!result.ok) {
+        throw new Error(result.message || "Failed to send message")
       }
 
       toast.success(`Message sent to ${selectedGuard.userName}`)
@@ -90,8 +90,8 @@ export function GuardsOnDutyTable({ guards, onRefresh }: GuardsOnDutyTableProps)
       setIsSending(true)
       const result = await supervisorClockOut(selectedGuard.dutySessionId)
 
-      if (!result.success) {
-        throw new Error(result.error || "Failed to end duty session")
+      if (!result.ok) {
+        throw new Error(result.message || "Failed to end duty session")
       }
 
       toast.success(`Duty session ended for ${selectedGuard.userName}`)

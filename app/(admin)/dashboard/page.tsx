@@ -10,23 +10,28 @@ import { IncidentReviewDialog } from "@/components/incidents/incident-review-dia
 import { GuardsOnDutyTable } from "@/components/supervisor/guards-on-duty-table"
 import { IncidentReportsStatus } from "@/components/supervisor/incident-reports-status"
 import { LocationLogbookViewer } from "@/components/supervisor/location-logbook-viewer"
+import { ActiveTourCard } from "@/components/tour/active-tour-card"
 import { FileText, Calendar, MapPin, Users } from "lucide-react"
 import { toast } from "sonner"
-import { getActiveLocations } from "@/lib/actions/location-actions"
+import { getActiveLocations, type ActiveLocationData } from "@/lib/actions/location-actions"
 import { getActiveDutySession, clockIn, clockOut, createLocationCheckIn } from "@/lib/actions/duty-session-actions"
 import { getGuardsOnDuty } from "@/lib/actions/guards-actions"
 import { getIncidents } from "@/lib/actions/log-actions"
 import { reviewIncident } from "@/lib/actions/incident-actions"
+import { getTours } from "@/lib/actions/tour-actions"
 import { getErrorMessage, type CatchError } from "@/lib/utils/error-handler"
-import type { DutySession, Location, GuardOnDuty, IncidentReport, UserRole } from "@/lib/types"
+import type { DutySession, GuardOnDuty, IncidentReport, UserRole } from "@/lib/types"
+import type { TourWithSupervisor } from "@/lib/types/prisma-types"
 
 export default function AdminDashboardPage() {
   const { user } = useUser()
   const [dutySession, setDutySession] = useState<DutySession | null>(null)
-  const [locations, setLocations] = useState<Location[]>([])
+  const [locations, setLocations] = useState<ActiveLocationData[]>([])
   const [guardsOnDuty, setGuardsOnDuty] = useState<GuardOnDuty[]>([])
   const [incidents, setIncidents] = useState<IncidentReport[]>([])
   const [selectedIncident, setSelectedIncident] = useState<IncidentReport | null>(null)
+  const [activeTour, setActiveTour] = useState<TourWithSupervisor | null>(null)
+
 
   const [clockInDialogOpen, setClockInDialogOpen] = useState(false)
   const [locationCheckInDialogOpen, setLocationCheckInDialogOpen] = useState(false)
@@ -70,6 +75,14 @@ export default function AdminDashboardPage() {
         const incidentsResult = await getIncidents()
         if (incidentsResult.ok && incidentsResult.data) {
           setIncidents(incidentsResult.data)
+        }
+
+        // Fetch active tour (IN_PROGRESS status)
+        const toursResult = await getTours({ status: "IN_PROGRESS" })
+        if (toursResult.ok && toursResult.data && toursResult.data.length > 0) {
+          setActiveTour(toursResult.data[0])
+        } else {
+          setActiveTour(null)
         }
       }
     } catch (error) {
@@ -224,6 +237,15 @@ export default function AdminDashboardPage() {
             </Card>
           )}
         </div>
+      )}
+
+      {/* Supervisor: Active Tour Card */}
+      {isSupervisor && activeTour && (
+        <ActiveTourCard
+          tour={activeTour}
+          locations={locations}
+          guards={[]}
+        />
       )}
 
       {/* Supervisor: Guards On Duty Table */}

@@ -2,7 +2,7 @@
 
 import { prisma } from "@/lib/prisma"
 import { getCurrentUser } from "@/lib/auth/sync-user"
-import { to, type Result } from "@/lib/utils/RenderError"
+import { to, type ActionResult } from "@/lib/utils/RenderError"
 
 export interface NotificationData {
   id: string
@@ -16,7 +16,7 @@ export interface NotificationData {
   createdAt: Date
 }
 
-export async function getNotifications(): Promise<Result<NotificationData[]>> {
+export async function getNotifications(): Promise<ActionResult<NotificationData[]>> {
   try {
     const user = await getCurrentUser()
 
@@ -61,7 +61,7 @@ export async function getNotifications(): Promise<Result<NotificationData[]>> {
   }
 }
 
-export async function dismissNotification(notificationId: string): Promise<Result<void>> {
+export async function dismissNotification(notificationId: string): Promise<ActionResult<void>> {
   try {
     const user = await getCurrentUser()
 

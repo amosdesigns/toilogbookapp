@@ -2,14 +2,18 @@
 
 import { auth } from "@clerk/nextjs/server"
 import { prisma } from "@/lib/prisma"
-import { to, type Result } from "@/lib/utils/RenderError"
+import { to, type ActionResult } from "@/lib/utils/RenderError"
+import type { LogWithRelations, IncidentWithDetails } from "@/lib/types/prisma-types"
 
-export async function getLogsByLocation(locationId: string, limit: number = 20) {
+export async function getLogsByLocation(
+  locationId: string,
+  limit: number = 20
+): Promise<ActionResult<LogWithRelations[]>> {
   try {
     const { userId } = await auth()
 
     if (!userId) {
-      return { success: false, error: "Unauthorized", logs: [] }
+      return { ok: false, message: "Unauthorized" }
     }
 
     const logs = await prisma.log.findMany({
@@ -35,14 +39,14 @@ export async function getLogsByLocation(locationId: string, limit: number = 20) 
       take: limit,
     })
 
-    return { success: true, logs }
+    return { ok: true, data: logs }
   } catch (error) {
     console.error("[GET_LOGS_BY_LOCATION]", error)
-    return { success: false, error: "Failed to fetch logs", logs: [] }
+    return to(error)
   }
 }
 
-export async function getIncidents(): Promise<Result<any>> {
+export async function getIncidents(): Promise<ActionResult<IncidentWithDetails[]>> {
   try {
     const { userId } = await auth()
 

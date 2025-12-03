@@ -3,9 +3,15 @@
 import { auth } from "@clerk/nextjs/server"
 import { prisma } from "@/lib/prisma"
 import { revalidatePath } from "next/cache"
-import { to, type Result } from "@/lib/utils/RenderError"
+import { to, type ActionResult } from "@/lib/utils/RenderError"
+import type { DutySession } from "@prisma/client"
+import type {
+  DutySessionWithCheckIns,
+  DutySessionWithRelations,
+  LocationCheckInWithLocation,
+} from "@/lib/types/prisma-types"
 
-export async function getActiveDutySession(): Promise<Result<any>> {
+export async function getActiveDutySession(): Promise<ActionResult<DutySessionWithCheckIns | null>> {
   try {
     const { userId } = await auth()
 
@@ -49,7 +55,7 @@ export async function getActiveDutySession(): Promise<Result<any>> {
   }
 }
 
-export async function clockIn(data: { locationId?: string; shiftId?: string }): Promise<Result<any>> {
+export async function clockIn(data: { locationId?: string; shiftId?: string }): Promise<ActionResult<DutySessionWithRelations>> {
   try {
     const { userId } = await auth()
 
@@ -116,7 +122,7 @@ export async function clockIn(data: { locationId?: string; shiftId?: string }): 
   }
 }
 
-export async function clockOut(dutySessionId: string, notes?: string): Promise<Result<any>> {
+export async function clockOut(dutySessionId: string, notes?: string): Promise<ActionResult<DutySessionWithRelations>> {
   try {
     const { userId } = await auth()
 
@@ -170,12 +176,12 @@ export async function clockOut(dutySessionId: string, notes?: string): Promise<R
   }
 }
 
-export async function supervisorClockOut(dutySessionId: string) {
+export async function supervisorClockOut(dutySessionId: string): Promise<ActionResult<DutySession>> {
   try {
     const { userId } = await auth()
 
     if (!userId) {
-      return { success: false, error: "Unauthorized" }
+      return { ok: false, message: "Unauthorized" }
     }
 
     // Get user from database
@@ -184,7 +190,7 @@ export async function supervisorClockOut(dutySessionId: string) {
     })
 
     if (!user) {
-      return { success: false, error: "User not found" }
+      return { ok: false, message: "User not found" }
     }
 
     // Verify supervisor role
@@ -193,7 +199,7 @@ export async function supervisorClockOut(dutySessionId: string) {
       user.role !== "ADMIN" &&
       user.role !== "SUPER_ADMIN"
     ) {
-      return { success: false, error: "Only supervisors can override clock out" }
+      return { ok: false, message: "Only supervisors can override clock out" }
     }
 
     // Get duty session
@@ -202,7 +208,7 @@ export async function supervisorClockOut(dutySessionId: string) {
     })
 
     if (!dutySession) {
-      return { success: false, error: "Duty session not found" }
+      return { ok: false, message: "Duty session not found" }
     }
 
     // Update duty session
@@ -216,10 +222,10 @@ export async function supervisorClockOut(dutySessionId: string) {
 
     revalidatePath("/admin/dashboard")
 
-    return { success: true, dutySession: updatedSession }
+    return { ok: true, data: updatedSession }
   } catch (error) {
     console.error("[SUPERVISOR_CLOCK_OUT]", error)
-    return { success: false, error: "Failed to clock out" }
+    return to(error)
   }
 }
 
@@ -227,7 +233,7 @@ export async function createLocationCheckIn(
   dutySessionId: string,
   locationId: string,
   notes?: string
-): Promise<Result<any>> {
+): Promise<ActionResult<LocationCheckInWithLocation>> {
   try {
     const { userId } = await auth()
 

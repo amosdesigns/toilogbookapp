@@ -3,9 +3,27 @@
 import { auth } from "@clerk/nextjs/server"
 import { prisma } from "@/lib/prisma"
 import { revalidatePath } from "next/cache"
-import { to, type Result } from "@/lib/utils/RenderError"
+import { to, type ActionResult } from "@/lib/utils/RenderError"
+import type { Prisma } from "@prisma/client"
 
-export async function reviewIncident(incidentId: string, reviewNotes: string): Promise<Result<any>> {
+// Type for reviewed incident with user and location relations
+export type ReviewedIncident = Prisma.LogGetPayload<{
+  include: {
+    user: {
+      select: {
+        firstName: true
+        lastName: true
+      }
+    }
+    location: {
+      select: {
+        name: true
+      }
+    }
+  }
+}>
+
+export async function reviewIncident(incidentId: string, reviewNotes: string): Promise<ActionResult<ReviewedIncident>> {
   try {
     const { userId } = await auth()
 

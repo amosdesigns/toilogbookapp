@@ -15,27 +15,40 @@
 ### ❌ NEVER Do This
 
 ```typescript
-// WRONG - Using any
+// WRONG - Using any as parameter type
 function processUser(user: any) {
-  return user.name
+  return user.name // No type safety, no autocomplete
 }
 
-// WRONG - Implicit any
+// WRONG - Implicit any from missing types
 const users = data.map(item => item) // item is implicitly any
 
-// WRONG - any in server actions
+// WRONG - any in server action return type
 export async function getUser(): Promise<any> {
-  // ...
+  const user = await prisma.user.findUnique({ where: { id } })
+  return user // Loses all type information
 }
 
-// WRONG - Type assertion to any
+// WRONG - Server action with any parameters
+export async function updateUser(data: any): Promise<Result<any>> {
+  // No validation, no type safety
+}
+
+// WRONG - Type assertion to any (bypasses type safety)
 const result = apiResponse as any
+const tourData = (formData as any).tourId // Dangerous!
+
+// WRONG - Using any in type definitions
+interface TourStop {
+  id: string
+  data: any // Defeats the purpose of TypeScript
+}
 ```
 
 ### ✅ ALWAYS Do This
 
 ```typescript
-// CORRECT - Proper interface
+// CORRECT - Proper interface with all fields typed
 interface User {
   id: string
   name: string
@@ -44,10 +57,10 @@ interface User {
 }
 
 function processUser(user: User): string {
-  return user.name
+  return user.name // Full type safety and autocomplete
 }
 
-// CORRECT - Explicit typing
+// CORRECT - Explicit typing in map operations
 const users = data.map((item: RawUser): User => ({
   id: item.id,
   name: item.name,
@@ -55,17 +68,197 @@ const users = data.map((item: RawUser): User => ({
   role: item.role
 }))
 
-// CORRECT - Proper return type
-export async function getUser(): Promise<Result<User>> {
+// CORRECT - Server action with Result<T> return type
+export async function getUser(userId: string): Promise<Result<User>> {
+  try {
+    const user = await prisma.user.findUnique({ where: { id: userId } })
+    if (!user) {
+      return { ok: false, message: 'User not found' }
+    }
+    return { ok: true, data: user }
+  } catch (error) {
+    return to(error)
+  }
+}
+
+// CORRECT - Server action with proper input and output types
+export async function updateUser(
+  userId: string,
+  data: UpdateUserInput
+): Promise<Result<User>> {
+  // Full type safety throughout
+}
+
+// CORRECT - Specific type assertion with interface
+interface ApiResponse {
+  data: User[]
+  meta: { total: number }
+}
+const result = apiResponse as ApiResponse
+
+// CORRECT - Proper type definition
+interface TourStop {
+  id: string
+  tourId: string
+  locationId: string | null
+  stopType: TourStopType
+  title: string
+  observations: string
+}
+```
+
+### Real-World Examples from This Codebase
+
+These are actual examples of how we eliminated `any` types in this project:
+
+#### Example 1: User Actions (lib/actions/user-actions.ts)
+
+```typescript
+// ❌ BEFORE - Using any
+export async function getCurrentUser(): Promise<ActionResult<any>> {
   // ...
 }
 
-// CORRECT - Proper type assertion
-interface ApiResponse {
-  data: User[]
+export async function getUsers(): Promise<ActionResult<any>> {
+  // ...
 }
-const result = apiResponse as ApiResponse
+
+// ✅ AFTER - Proper interfaces matching Prisma selects
+import type { Role } from "@prisma/client"
+
+export interface CurrentUserData {
+  id: string
+  clerkId: string
+  email: string
+  firstName: string
+  lastName: string
+  role: Role
+  phone?: string | null
+  streetAddress?: string | null
+  city?: string | null
+  state?: string | null
+  zipCode?: string | null
+  createdAt: Date
+  updatedAt: Date
+}
+
+export interface UserListItem {
+  id: string
+  clerkId: string
+  email: string
+  firstName: string
+  lastName: string
+  role: Role
+  phone?: string | null
+  createdAt: Date
+}
+
+export async function getCurrentUser(): Promise<ActionResult<CurrentUserData>> {
+  // ...
+}
+
+export async function getUsers(): Promise<ActionResult<UserListItem[]>> {
+  // ...
+}
 ```
+
+#### Example 2: Guards Actions (lib/actions/guards-actions.ts)
+
+```typescript
+// ❌ BEFORE - Array of any
+export async function getGuardsOnDuty(): Promise<ActionResult<any>> {
+  const guards = activeSessions.map((session) => {
+    // ... transformation logic
+  })
+  return { ok: true, data: guards }
+}
+
+// ✅ AFTER - Explicit interface for guard data
+import type { Role } from "@prisma/client"
+
+export interface GuardOnDutyData {
+  userId: string
+  userName: string
+  userEmail: string
+  role: Role
+  dutySessionId: string
+  locationId: string | null
+  locationName: string | null
+  clockInTime: Date
+  hoursOnDuty: string
+}
+
+export async function getGuardsOnDuty(): Promise<ActionResult<GuardOnDutyData[]>> {
+  const guards: GuardOnDutyData[] = activeSessions.map((session) => ({
+    userId: session.user.id,
+    userName: `${session.user.firstName} ${session.user.lastName}`,
+    userEmail: session.user.email,
+    role: session.user.role,
+    dutySessionId: session.id,
+    locationId: session.locationId,
+    locationName: session.location?.name || null,
+    clockInTime: session.clockInTime,
+    hoursOnDuty: (/* calculation */).toFixed(1),
+  }))
+  return { ok: true, data: guards }
+}
+```
+
+#### Example 3: Incident Actions (lib/actions/incident-actions.ts)
+
+```typescript
+// ❌ BEFORE - Using any for complex return type
+export async function reviewIncident(
+  incidentId: string,
+  reviewNotes: string
+): Promise<ActionResult<any>> {
+  const updatedIncident = await prisma.log.update({
+    where: { id: incidentId },
+    data: { reviewedBy, reviewedAt, reviewNotes },
+    include: {
+      user: { select: { firstName: true, lastName: true } },
+      location: { select: { name: true } }
+    }
+  })
+  return { ok: true, data: updatedIncident }
+}
+
+// ✅ AFTER - Use Prisma.GetPayload for exact typing
+import type { Prisma } from "@prisma/client"
+
+export type ReviewedIncident = Prisma.LogGetPayload<{
+  include: {
+    user: {
+      select: {
+        firstName: true
+        lastName: true
+      }
+    }
+    location: {
+      select: {
+        name: true
+      }
+    }
+  }
+}>
+
+export async function reviewIncident(
+  incidentId: string,
+  reviewNotes: string
+): Promise<ActionResult<ReviewedIncident>> {
+  // TypeScript now knows the exact shape of updatedIncident
+  const updatedIncident = await prisma.log.update({ /* ... */ })
+  return { ok: true, data: updatedIncident }
+}
+```
+
+### Key Patterns for Eliminating `any`
+
+1. **Create interfaces that match your Prisma select/include queries**
+2. **Use `Prisma.ModelGetPayload<{...}>` for complex queries with relations**
+3. **Export types from action files for use in components**
+4. **Use proper Prisma-generated types (e.g., `Role` from `@prisma/client`)**
+5. **Make optional fields explicit with `?: type | null`** to match database nullability
 
 ## Result<T> Pattern
 
@@ -113,9 +306,60 @@ export async function getUser(userId: string): Promise<Result<User>> {
 
 ## Handling Zod + React Hook Form Type Conflicts
 
-When Zod v4's type inference doesn't match your needs (e.g., `z.preprocess` returns `unknown`):
+### Problem 1: `z.coerce.number()` Creates Type Issues
 
-### Problem
+When using `z.coerce.number()`, the inferred type becomes `unknown`, causing TypeScript errors with `zodResolver`:
+
+```typescript
+// ❌ PROBLEMATIC - z.coerce creates 'unknown' type
+export const schema = z.object({
+  mileage: z.coerce.number().int().min(0)
+})
+
+type FormData = z.infer<typeof schema> // { mileage: unknown } ❌
+
+const form = useForm<FormData>({
+  resolver: zodResolver(schema), // Type error!
+  defaultValues: { mileage: 0 }
+})
+```
+
+**Error**: `Type 'unknown' is not assignable to type 'number'`
+
+### Solution: Use `z.number()` for Number Inputs
+
+Since HTML `<input type="number">` already returns a number via `valueAsNumber`, use `z.number()` instead:
+
+```typescript
+// ✅ CORRECT - z.number() for proper type inference
+export const schema = z.object({
+  mileage: z.number()
+    .int('Mileage must be a whole number')
+    .min(0, 'Mileage cannot be negative')
+    .max(999999, 'Mileage value too large')
+})
+
+type FormData = z.infer<typeof schema> // { mileage: number } ✅
+
+const form = useForm<FormData>({
+  resolver: zodResolver(schema), // Works perfectly!
+  defaultValues: { mileage: 0 }
+})
+
+// In the component, use onChange to convert string to number
+<Input
+  type="number"
+  {...field}
+  onChange={(e) => field.onChange(e.target.valueAsNumber)}
+/>
+```
+
+**When to use each**:
+- ✅ Use `z.number()` when input is already a number (form inputs with `type="number"`)
+- ✅ Use `z.coerce.number()` when parsing string data from external sources (URL params, API responses)
+
+### Problem 2: `z.preprocess()` Returns `unknown`
+
 ```typescript
 // Zod schema with preprocessing
 export const schema = z.object({
