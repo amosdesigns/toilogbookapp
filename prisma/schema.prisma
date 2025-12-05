@@ -323,13 +323,14 @@ model Log {
   reviewedAt        DateTime? // When reviewed
   reviewNotes       String?           @db.Text // Supervisor notes
 
-  location                Location                 @relation(fields: [locationId], references: [id])
-  shift                   Shift?                   @relation(fields: [shiftId], references: [id])
-  user                    User                     @relation(fields: [userId], references: [id])
-  reviewer                User?                    @relation("ReviewedLogs", fields: [reviewedBy], references: [id])
+  location                Location                      @relation(fields: [locationId], references: [id])
+  shift                   Shift?                        @relation(fields: [shiftId], references: [id])
+  user                    User                          @relation(fields: [userId], references: [id])
+  reviewer                User?                         @relation("ReviewedLogs", fields: [reviewedBy], references: [id])
   safetyChecklistResponse SafetyChecklistResponse?
   incidentReport          IncidentReport?
   logEdits                LogEdit[]
+  incidentReportGeneration IncidentReportGeneration[]
 
   createdAt  DateTime  @default(now())
   updatedAt  DateTime  @updatedAt
@@ -1081,4 +1082,43 @@ model SupervisorEquipmentCheckout {
   @@index([dutySessionId])
   @@index([equipmentId])
   @@index([checkoutTime])
+}
+
+// Incident Report Generation - stores formal incident reports with digital signatures
+// One report per log, locked immediately upon creation
+model IncidentReportGeneration {
+  id             String   @id @default(cuid())
+  logId          String   @unique  // One report per log
+  log            Log      @relation(fields: [logId], references: [id], onDelete: Cascade)
+
+  // Report metadata
+  incidentNumber String   @unique  // Format: INC-YYYY-{logId}
+  generatedAt    DateTime @default(now())
+  generatedBy    String   // User ID who generated (supervisor+)
+
+  // Guard signature (optional, can be assigned and signed later)
+  guardAssignedId   String?  // User ID assigned to sign as guard
+  guardSignedBy     String?  // User ID who actually signed
+  guardSignedByName String?  // Full name
+  guardSignedAt     DateTime?  // Auto-dated when signed
+  guardIpAddress    String?
+
+  // Supervisor signature (required to be assigned)
+  supervisorAssignedId   String   // User ID assigned to sign as supervisor
+  supervisorSignedBy     String?  // User ID who actually signed
+  supervisorSignedByName String?  // Full name
+  supervisorSignedAt     DateTime?  // Auto-dated when signed
+  supervisorIpAddress    String?
+
+  // Notification tracking (array of supervisor user IDs notified)
+  notifiedUsers String[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([logId])
+  @@index([incidentNumber])
+  @@index([generatedBy])
+  @@index([guardAssignedId])
+  @@index([supervisorAssignedId])
 }
