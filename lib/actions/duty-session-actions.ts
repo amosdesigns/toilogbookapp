@@ -89,14 +89,25 @@ export async function clockIn(data: { locationId?: string; shiftId?: string }): 
       return { ok: false, message: "Guards must select a location" }
     }
 
-    // Supervisors/Admins should have null locationId for roaming duty
+    // Supervisors/Admins should use HQ location (not roaming with null)
     let locationId: string | null | undefined = data.locationId
     if (
       user.role === "SUPERVISOR" ||
       user.role === "ADMIN" ||
       user.role === "SUPER_ADMIN"
     ) {
-      locationId = null // Force null for roaming duty
+      // Get HQ location
+      const hqLocation = await prisma.location.findFirst({
+        where: {
+          name: "HQ - Headquarters",
+        },
+      })
+
+      if (!hqLocation) {
+        return { ok: false, message: "HQ location not found. Please contact administrator." }
+      }
+
+      locationId = hqLocation.id
     }
 
     // Create duty session
@@ -111,6 +122,40 @@ export async function clockIn(data: { locationId?: string; shiftId?: string }): 
         shift: true,
       },
     })
+
+    // If supervisor clocked in, notify all active guards
+    if (
+      user.role === "SUPERVISOR" ||
+      user.role === "ADMIN" ||
+      user.role === "SUPER_ADMIN"
+    ) {
+      // Get all guards currently on duty
+      const activeGuards = await prisma.dutySession.findMany({
+        where: {
+          clockOutTime: null,
+          user: {
+            role: "GUARD",
+          },
+        },
+        include: {
+          user: true,
+        },
+      })
+
+      // Create notifications for each active guard
+      if (activeGuards.length > 0) {
+        await prisma.notification.createMany({
+          data: activeGuards.map((guardSession) => ({
+            userId: guardSession.userId,
+            type: "INFO",
+            priority: "MEDIUM",
+            title: "Supervisor On Duty",
+            message: `${user.firstName} ${user.lastName} has started their shift`,
+            dismissible: true,
+          })),
+        })
+      }
+    }
 
     revalidatePath("/")
     revalidatePath("/admin/dashboard")
@@ -250,6 +295,21 @@ export async function createLocationCheckIn(
       return { ok: false, message: "User not found" }
     }
 
+    // Check if there's an active location check-in (no checkOutTime)
+    const activeCheckIn = await prisma.locationCheckIn.findFirst({
+      where: {
+        dutySessionId,
+        checkOutTime: null,
+      },
+    })
+
+    if (activeCheckIn) {
+      return {
+        ok: false,
+        message: "You must check out from your current location before checking in to a new one",
+      }
+    }
+
     // Create location check-in
     const checkIn = await prisma.locationCheckIn.create({
       data: {
@@ -268,6 +328,62 @@ export async function createLocationCheckIn(
     return { ok: true, data: checkIn }
   } catch (error) {
     console.error("[CREATE_LOCATION_CHECK_IN]", error)
+    return to(error)
+  }
+}
+
+export async function checkoutFromLocation(
+  checkInId: string
+): Promise<ActionResult<LocationCheckInWithLocation>> {
+  try {
+    const { userId } = await auth()
+
+    if (!userId) {
+      return { ok: false, message: "Unauthorized" }
+    }
+
+    // Get user from database
+    const user = await prisma.user.findUnique({
+      where: { clerkId: userId },
+    })
+
+    if (!user) {
+      return { ok: false, message: "User not found" }
+    }
+
+    // Verify the check-in exists and belongs to this user
+    const checkIn = await prisma.locationCheckIn.findUnique({
+      where: { id: checkInId },
+    })
+
+    if (!checkIn) {
+      return { ok: false, message: "Check-in not found" }
+    }
+
+    if (checkIn.userId !== user.id) {
+      return { ok: false, message: "Unauthorized" }
+    }
+
+    if (checkIn.checkOutTime) {
+      return { ok: false, message: "Already checked out from this location" }
+    }
+
+    // Update with check-out time
+    const updatedCheckIn = await prisma.locationCheckIn.update({
+      where: { id: checkInId },
+      data: {
+        checkOutTime: new Date(),
+      },
+      include: {
+        location: true,
+      },
+    })
+
+    revalidatePath("/admin/dashboard")
+
+    return { ok: true, data: updatedCheckIn }
+  } catch (error) {
+    console.error("[CHECKOUT_FROM_LOCATION]", error)
     return to(error)
   }
 }

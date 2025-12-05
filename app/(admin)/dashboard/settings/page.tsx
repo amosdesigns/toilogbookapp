@@ -17,7 +17,7 @@ export default async function SettingsPage() {
   }
 
   if (!isAdmin(user.role)) {
-    redirect('/admin/dashboard')
+    redirect('/')
   }
 
   // Pass user data to client component

@@ -5,6 +5,23 @@ import { prisma } from "@/lib/prisma"
 import { to, type ActionResult } from "@/lib/utils/RenderError"
 import type { LogWithRelations, IncidentWithDetails } from "@/lib/types/prisma-types"
 
+export async function getTotalLogsCount(): Promise<ActionResult<number>> {
+  try {
+    const { userId } = await auth()
+
+    if (!userId) {
+      return { ok: false, message: "Unauthorized" }
+    }
+
+    const count = await prisma.log.count()
+
+    return { ok: true, data: count }
+  } catch (error) {
+    console.error("[GET_TOTAL_LOGS_COUNT]", error)
+    return to(error)
+  }
+}
+
 export async function getLogsByLocation(
   locationId: string,
   limit: number = 20

@@ -120,6 +120,11 @@ enum TourStopType {
   GENERAL_OBSERVATION
 }
 
+enum SupervisorEquipmentType {
+  CAR
+  RADIO
+}
+
 // Models
 model User {
   id            String  @id @default(cuid())
@@ -360,6 +365,7 @@ model DutySession {
   safetyChecklistResponses SafetyChecklistResponse[]
   timesheetEntries         TimesheetEntry[]
   messages                 Message[]
+  equipmentCheckouts       SupervisorEquipmentCheckout[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -376,8 +382,9 @@ model LocationCheckIn {
   locationId    String
   userId        String // Supervisor who checked in
 
-  checkInTime DateTime @default(now())
-  notes       String?  @db.Text // Observations at this location
+  checkInTime  DateTime  @default(now())
+  checkOutTime DateTime? // When supervisor leaves this location
+  notes        String?   @db.Text // Observations at this location
 
   dutySession DutySession @relation(fields: [dutySessionId], references: [id], onDelete: Cascade)
   location    Location    @relation(fields: [locationId], references: [id])
@@ -1033,4 +1040,45 @@ model TourStop {
   @@index([locationId])
   @@index([guardUserId])
   @@index([arrivedAt])
+}
+
+// Supervisor Equipment Management
+model SupervisorEquipment {
+  id          String                  @id @default(cuid())
+  type        SupervisorEquipmentType
+  identifier  String // License plate for CAR, Radio number for RADIO
+  isAvailable Boolean                 @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  checkouts SupervisorEquipmentCheckout[]
+
+  @@unique([type, identifier])
+  @@index([type])
+  @@index([isAvailable])
+}
+
+// Track supervisor equipment checkout/checkin
+model SupervisorEquipmentCheckout {
+  id            String   @id @default(cuid())
+  dutySessionId String
+  equipmentId   String
+
+  // Car-specific fields
+  checkoutMileage Int?
+  checkinMileage  Int?
+
+  // Timestamps
+  checkoutTime DateTime  @default(now())
+  checkinTime  DateTime?
+  notes        String?   @db.Text
+
+  // Relations
+  dutySession DutySession         @relation(fields: [dutySessionId], references: [id], onDelete: Cascade)
+  equipment   SupervisorEquipment @relation(fields: [equipmentId], references: [id])
+
+  @@index([dutySessionId])
+  @@index([equipmentId])
+  @@index([checkoutTime])
 }

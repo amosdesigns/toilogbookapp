@@ -89,7 +89,7 @@ export function AdminSidebar({ user }: AdminSidebarProps) {
   const pathname = usePathname()
 
   return (
-    <Sidebar>
+    <Sidebar className="flex justify-between">
       <SidebarHeader>
         <div className="flex items-center justify-between px-4 py-2">
           <Logo size={32} showText />

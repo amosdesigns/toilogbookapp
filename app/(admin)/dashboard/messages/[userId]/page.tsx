@@ -18,16 +18,12 @@ export default async function ConversationPage({ params }: ConversationPageProps
   const user = await getCurrentUser()
 
   if (!user) {
-    redirect("/admin/dashboard")
+    redirect("/sign-in")
   }
 
   // Verify supervisor role
-  if (
-    user.role !== "SUPERVISOR" &&
-    user.role !== "ADMIN" &&
-    user.role !== "SUPER_ADMIN"
-  ) {
-    redirect("/admin/dashboard")
+  if (user.role === "GUARD") {
+    redirect("/");
   }
 
   // Fetch conversation thread

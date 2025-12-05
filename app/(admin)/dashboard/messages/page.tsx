@@ -10,28 +10,24 @@ export const metadata: Metadata = {
 }
 
 export default async function SupervisorMessagesPage() {
-  const user = await getCurrentUser()
+  const user = await getCurrentUser();
 
   if (!user) {
-    redirect("/admin/dashboard")
+    redirect("/sign-in");
   }
 
-  // Verify supervisor role
-  if (
-    user.role !== "SUPERVISOR" &&
-    user.role !== "ADMIN" &&
-    user.role !== "SUPER_ADMIN"
-  ) {
-    redirect("/admin/dashboard")
+  // Only supervisors and above can access message management
+  if (user.role === "GUARD") {
+    redirect("/");
   }
 
   // Fetch conversations
-  const result = await getGuardConversations()
-  const conversations = result.ok ? result.data : []
+  const result = await getGuardConversations();
+  const conversations = result.ok ? result.data : [];
 
   return (
     <div className="container max-w-6xl mx-auto py-6">
       <SupervisorMessagesView initialConversations={conversations} />
     </div>
-  )
+  );
 }

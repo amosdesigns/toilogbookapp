@@ -453,3 +453,54 @@ export type UserWithDutySessions = {
   lastName: string
   role: string
 }
+
+// ============================================================================
+// Supervisor Equipment Types
+// ============================================================================
+
+export type SupervisorEquipmentWithCheckouts = Prisma.SupervisorEquipmentGetPayload<{
+  include: {
+    checkouts: {
+      include: {
+        dutySession: {
+          include: {
+            user: {
+              select: {
+                firstName: true
+                lastName: true
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}>
+
+export type SupervisorEquipmentCheckoutWithDetails = Prisma.SupervisorEquipmentCheckoutGetPayload<{
+  include: {
+    equipment: true
+    dutySession: {
+      include: {
+        user: {
+          select: {
+            firstName: true
+            lastName: true
+          }
+        }
+      }
+    }
+  }
+}>
+
+export type DutySessionWithEquipment = Prisma.DutySessionGetPayload<{
+  include: {
+    location: true
+    shift: true
+    equipmentCheckouts: {
+      include: {
+        equipment: true
+      }
+    }
+  }
+}>
