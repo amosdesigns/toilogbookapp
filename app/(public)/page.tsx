@@ -231,7 +231,6 @@ export default function HomePage() {
         onOpenChange={setClockInDialogOpen}
         onSubmit={handleClockIn}
         locations={locations}
-        userRole={userRole}
         isLoading={isLoading}
       />
     </div>

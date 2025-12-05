@@ -42,17 +42,7 @@ const guardClockInSchema = z.object({
   shiftId: z.string().optional(),
 })
 
-// Schema for supervisors/admins - locationId is optional (roaming duty)
-const supervisorClockInSchema = z.object({
-  locationId: z.string().optional(),
-  shiftId: z.string().optional(),
-})
-
-// Union type to support both guard and supervisor form data
-type ClockInFormData = {
-  locationId?: string
-  shiftId?: string
-}
+type ClockInFormData = z.infer<typeof guardClockInSchema>
 
 interface ClockInDialogProps {
   open: boolean
@@ -60,7 +50,6 @@ interface ClockInDialogProps {
   onSubmit: (data: ClockInFormData) => Promise<void>
   locations: Array<{ id: string; name: string }>
   shifts?: Array<{ id: string; name: string }>
-  userRole: "GUARD" | "SUPERVISOR" | "ADMIN" | "SUPER_ADMIN"
   isLoading?: boolean
 }
 
@@ -70,26 +59,24 @@ export function ClockInDialog({
   onSubmit,
   locations,
   shifts = [],
-  userRole,
   isLoading = false,
 }: ClockInDialogProps) {
-  const isGuard = userRole === "GUARD"
   const [error, setError] = useState<string | null>(null)
   const [safetyItems, setSafetyItems] = useState<SafetyChecklistItem[]>([])
   const [checklistState, setChecklistState] = useState<Record<string, { checked: boolean; notes: string }>>({})
   const [isFetchingItems, setIsFetchingItems] = useState(false)
 
   const form = useForm<ClockInFormData>({
-    resolver: zodResolver(isGuard ? guardClockInSchema : supervisorClockInSchema),
+    resolver: zodResolver(guardClockInSchema),
     defaultValues: {
       locationId: "",
       shiftId: "",
     },
   })
 
-  // Fetch safety checklist items when dialog opens (for guards only)
+  // Fetch safety checklist items when dialog opens
   useEffect(() => {
-    if (open && isGuard) {
+    if (open) {
       const fetchItems = async () => {
         setIsFetchingItems(true)
         const result = await getSafetyChecklistItems()
@@ -108,14 +95,14 @@ export function ClockInDialog({
       }
       fetchItems()
     }
-  }, [open, isGuard])
+  }, [open])
 
   const handleSubmit = async (data: ClockInFormData) => {
     try {
       setError(null)
 
-      // For guards, validate that all safety items are checked
-      if (isGuard && safetyItems.length > 0) {
+      // Validate that all safety items are checked
+      if (safetyItems.length > 0) {
         const allChecked = Object.values(checklistState).every(item => item.checked)
         if (!allChecked) {
           setError("Please check all safety items before clocking in")
@@ -126,7 +113,7 @@ export function ClockInDialog({
       // Pass checklist data to parent handler
       const submitData = {
         ...data,
-        checklistItems: isGuard ? checklistState : undefined
+        checklistItems: checklistState
       }
 
       await onSubmit(submitData)
@@ -138,8 +125,8 @@ export function ClockInDialog({
     }
   }
 
-  // Check if all checklist items are checked (for guards)
-  const allItemsChecked = isGuard && safetyItems.length > 0
+  // Check if all checklist items are checked
+  const allItemsChecked = safetyItems.length > 0
     ? Object.values(checklistState).every(item => item?.checked)
     : true
 
@@ -151,9 +138,7 @@ export function ClockInDialog({
         <DialogHeader>
           <DialogTitle>Report for Duty</DialogTitle>
           <DialogDescription>
-            {isGuard
-              ? "Select your location and complete the safety equipment checklist to clock in."
-              : "Start your roaming duty across all locations."}
+            Select your location and complete the safety equipment checklist to clock in.
           </DialogDescription>
         </DialogHeader>
 
@@ -165,9 +150,7 @@ export function ClockInDialog({
               </Alert>
             )}
 
-            {isGuard ? (
-              <>
-                {/* Location Selection for Guards */}
+            {/* Location Selection */}
                 <FormField
                   control={form.control}
                   name="locationId"
@@ -239,8 +222,8 @@ export function ClockInDialog({
                   />
                 )}
 
-                {/* Safety Checklist for Guards */}
-                {isGuard && safetyItems.length > 0 && (
+                {/* Safety Checklist */}
+                {safetyItems.length > 0 && (
                   <div className="space-y-3 border rounded-lg p-4">
                     <div className="flex items-center justify-between">
                       <Label className="text-base font-medium">Safety Equipment Checklist</Label>
@@ -307,56 +290,6 @@ export function ClockInDialog({
                     </div>
                   </div>
                 )}
-              </>
-            ) : (
-              <>
-                {/* Supervisor Roaming Duty */}
-                <Alert>
-                  <MapPin className="h-4 w-4" />
-                  <AlertDescription>
-                    As a supervisor, you'll be on roaming duty across all {locations.length} locations.
-                    You'll need to check in at each location during your shift.
-                  </AlertDescription>
-                </Alert>
-
-                {/* Optional Shift Linking */}
-                {shifts.length > 0 && (
-                  <FormField
-                    control={form.control}
-                    name="shiftId"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Shift (Optional)</FormLabel>
-                        <Select
-                          onValueChange={field.onChange}
-                          defaultValue={field.value}
-                        >
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Link to a shift" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {shifts.map((shift) => (
-                              <SelectItem key={shift.id} value={shift.id}>
-                                <div className="flex items-center gap-2">
-                                  <Clock className="h-4 w-4" />
-                                  {shift.name}
-                                </div>
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <FormDescription>
-                          Link this duty session to a scheduled shift
-                        </FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                )}
-              </>
-            )}
 
             <div className="flex justify-end gap-3 pt-4">
               <Button

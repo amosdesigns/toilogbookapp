@@ -97,7 +97,7 @@ export function DutyStatusCard({
               onClick={onClockIn}
               className="w-full"
             >
-              Report for Duty
+              Headquarters Check-In Only
             </Button>
           </>
         )}

@@ -125,7 +125,7 @@ export default function ShiftsPage() {
             const isYesterday = index === 0
 
             return (
-              <div key={day.toISOString()} className="w-[280px] flex-shrink-0">
+              <div key={day.toISOString()} className="w-[280px] shrink-0">
                 {/* Day header */}
                 <div
                   className={cn(

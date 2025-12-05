@@ -19,11 +19,11 @@ export default async function AdminLayout({
     <SidebarProvider>
       <div className="flex min-h-screen w-full">
         <AdminSidebar user={user} />
-        <SidebarInset>
-          <header className="flex h-14 items-center gap-4 border-b px-4 lg:h-16 lg:px-6">
+        <SidebarInset className="flex flex-col flex-1">
+          <header className="flex h-14 items-center gap-4 border-b px-4 lg:h-16 lg:px-6 shrink-0">
             <SidebarTrigger />
           </header>
-          <main className="flex-1 p-4 md:p-6 lg:p-6">
+          <main className="flex-1 p-4 md:p-6 lg:p-6 overflow-auto">
             <AuthenticatedLayoutWrapper>
               {children}
             </AuthenticatedLayoutWrapper>

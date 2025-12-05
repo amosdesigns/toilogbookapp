@@ -102,14 +102,18 @@ export async function syncUserToDatabase() {
 export async function getCurrentUser() {
   try {
     const clerkUser = await currentUser()
+    console.log('[GET_USER] Clerk user ID:', clerkUser?.id)
 
     if (!clerkUser) {
+      console.log('[GET_USER] No Clerk user found')
       return null
     }
 
     const dbUser = await prisma.user.findUnique({
       where: { clerkId: clerkUser.id },
     })
+
+    console.log('[GET_USER] DB user found:', dbUser ? `${dbUser.email} (${dbUser.role})` : 'null')
 
     return dbUser
   } catch (error) {
