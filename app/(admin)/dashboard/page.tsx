@@ -1,69 +1,119 @@
-"use client"
+"use client";
 
-import { useEffect, useState } from "react"
-import { useUser } from "@clerk/nextjs"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { getCurrentUser } from "@/lib/auth/sync-user"
-import { DutyStatusCard } from "@/components/duty/duty-status-card"
-import { ClockInDialog } from "@/components/duty/clock-in-dialog"
-import { SupervisorClockInDialog } from "@/components/duty/supervisor-clock-in-dialog"
-import { SupervisorClockOutDialog } from "@/components/duty/supervisor-clock-out-dialog"
-import { SupervisorEquipmentStatusCard } from "@/components/duty/supervisor-equipment-status-card"
-import { LocationCheckInDialog } from "@/components/duty/location-checkin-dialog"
-import { IncidentReviewDialog } from "@/components/incidents/incident-review-dialog"
-import { GuardsOnDutyTable } from "@/components/supervisor/guards-on-duty-table"
-import { IncidentReportsStatus } from "@/components/supervisor/incident-reports-status"
-import { LocationLogbookViewer } from "@/components/supervisor/location-logbook-viewer"
-import { ActiveTourCard } from "@/components/tour/active-tour-card"
-import { FileText, Calendar, MapPin, Users } from "lucide-react"
-import { toast } from "sonner"
-import { getActiveLocations, type ActiveLocationData } from "@/lib/actions/location-actions"
-import { getActiveDutySession, clockIn, clockOut, createLocationCheckIn, checkoutFromLocation } from "@/lib/actions/duty-session-actions"
-import { getGuardsOnDuty } from "@/lib/actions/guards-actions"
-import { getIncidents, getTotalLogsCount } from "@/lib/actions/log-actions"
-import { reviewIncident } from "@/lib/actions/incident-actions"
-import { getTours } from "@/lib/actions/tour-actions"
-import { getShifts } from "@/lib/actions/shift-actions"
-import { checkoutEquipment, checkinEquipment, getEquipmentCheckouts } from "@/lib/actions/supervisor-equipment-actions"
-import { getErrorMessage, type CatchError } from "@/lib/utils/error-handler"
-import type { DutySession, GuardOnDuty, IncidentReport, UserRole } from "@/lib/types"
-import type { TourWithSupervisor, DutySessionWithCheckIns } from "@/lib/types/prisma-types"
-import type { SupervisorEquipmentCheckout, SupervisorEquipment } from "@prisma/client"
+import { useEffect, useState } from "react";
+import { useUser } from "@clerk/nextjs";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { getCurrentUser } from "@/lib/auth/sync-user";
+import { DutyStatusCard } from "@/components/duty/duty-status-card";
+import { ClockInDialog } from "@/components/duty/clock-in-dialog";
+import { SupervisorClockInDialog } from "@/components/duty/supervisor-clock-in-dialog";
+import { SupervisorClockOutDialog } from "@/components/duty/supervisor-clock-out-dialog";
+import { SupervisorEquipmentStatusCard } from "@/components/duty/supervisor-equipment-status-card";
+import { LocationCheckInDialog } from "@/components/duty/location-checkin-dialog";
+import { IncidentReviewDialog } from "@/components/incidents/incident-review-dialog";
+import { LogDetailDialog } from "@/components/logs/log-detail-dialog";
+import { GuardsOnDutyTable } from "@/components/supervisor/guards-on-duty-table";
+import { IncidentReportsStatus } from "@/components/supervisor/incident-reports-status";
+import { LocationLogbookViewer } from "@/components/supervisor/location-logbook-viewer";
+import { ActiveTourCard } from "@/components/tour/active-tour-card";
+import { FileText, Calendar, MapPin, Users } from "lucide-react";
+import { toast } from "sonner";
+import {
+  getActiveLocations,
+  type ActiveLocationData,
+} from "@/lib/actions/location-actions";
+import {
+  getActiveDutySession,
+  clockIn,
+  clockOut,
+  createLocationCheckIn,
+  checkoutFromLocation,
+} from "@/lib/actions/duty-session-actions";
+import { getGuardsOnDuty } from "@/lib/actions/guards-actions";
+import { getIncidents, getTotalLogsCount } from "@/lib/actions/log-actions";
+import { reviewIncident } from "@/lib/actions/incident-actions";
+import { getUsers } from "@/lib/actions/user-actions";
+import { getTours } from "@/lib/actions/tour-actions";
+import { getShifts } from "@/lib/actions/shift-actions";
+import {
+  checkoutEquipment,
+  checkinEquipment,
+  getEquipmentCheckouts,
+} from "@/lib/actions/supervisor-equipment-actions";
+import { getErrorMessage, type CatchError } from "@/lib/utils/error-handler";
+import type {
+  DutySession,
+  GuardOnDuty,
+  IncidentReport,
+  UserRole,
+} from "@/lib/types";
+import type {
+  TourWithSupervisor,
+  DutySessionWithCheckIns,
+} from "@/lib/types/prisma-types";
+import type {
+  SupervisorEquipmentCheckout,
+  SupervisorEquipment,
+} from "@prisma/client";
 
 type EquipmentCheckoutWithEquipment = SupervisorEquipmentCheckout & {
-  equipment: SupervisorEquipment
-}
+  equipment: SupervisorEquipment;
+};
 
 export default function AdminDashboardPage() {
-  const { user } = useUser()
-  const [dbUser, setDbUser] = useState<{ role: UserRole } | null>(null)
-  const [dutySession, setDutySession] = useState<DutySessionWithCheckIns | null>(null)
-  const [locations, setLocations] = useState<ActiveLocationData[]>([])
-  const [guardsOnDuty, setGuardsOnDuty] = useState<GuardOnDuty[]>([])
-  const [incidents, setIncidents] = useState<IncidentReport[]>([])
-  const [selectedIncident, setSelectedIncident] = useState<IncidentReport | null>(null)
-  const [activeTour, setActiveTour] = useState<TourWithSupervisor | null>(null)
-  const [equipmentCheckouts, setEquipmentCheckouts] = useState<EquipmentCheckoutWithEquipment[]>([])
+  const { user } = useUser();
+  const [dbUser, setDbUser] = useState<{ role: UserRole } | null>(null);
+  const [dutySession, setDutySession] =
+    useState<DutySessionWithCheckIns | null>(null);
+  const [locations, setLocations] = useState<ActiveLocationData[]>([]);
+  const [guardsOnDuty, setGuardsOnDuty] = useState<GuardOnDuty[]>([]);
+  const [incidents, setIncidents] = useState<IncidentReport[]>([]);
+  const [selectedIncident, setSelectedIncident] =
+    useState<IncidentReport | null>(null);
+  const [activeTour, setActiveTour] = useState<TourWithSupervisor | null>(null);
+  const [allGuards, setAllGuards] = useState<
+    Array<{ id: string; firstName: string; lastName: string; role: string }>
+  >([]);
+  const [allSupervisors, setAllSupervisors] = useState<
+    Array<{ id: string; firstName: string; lastName: string; role: string }>
+  >([]);
+  const [equipmentCheckouts, setEquipmentCheckouts] = useState<
+    EquipmentCheckoutWithEquipment[]
+  >([]);
 
   // Stats data
-  const [totalLogs, setTotalLogs] = useState(0)
-  const [todayShifts, setTodayShifts] = useState(0)
+  const [totalLogs, setTotalLogs] = useState(0);
+  const [todayShifts, setTodayShifts] = useState(0);
 
-  const [clockInDialogOpen, setClockInDialogOpen] = useState(false)
-  const [supervisorClockInDialogOpen, setSupervisorClockInDialogOpen] = useState(false)
-  const [supervisorClockOutDialogOpen, setSupervisorClockOutDialogOpen] = useState(false)
-  const [locationCheckInDialogOpen, setLocationCheckInDialogOpen] = useState(false)
-  const [reviewDialogOpen, setReviewDialogOpen] = useState(false)
+  const [clockInDialogOpen, setClockInDialogOpen] = useState(false);
+  const [supervisorClockInDialogOpen, setSupervisorClockInDialogOpen] =
+    useState(false);
+  const [supervisorClockOutDialogOpen, setSupervisorClockOutDialogOpen] =
+    useState(false);
+  const [locationCheckInDialogOpen, setLocationCheckInDialogOpen] =
+    useState(false);
+  const [reviewDialogOpen, setReviewDialogOpen] = useState(false);
+  const [logDetailDialogOpen, setLogDetailDialogOpen] = useState(false);
+  const [selectedLog, setSelectedLog] = useState<IncidentReport | null>(null);
 
-  const [isLoading, setIsLoading] = useState(false)
-  const [isFetching, setIsFetching] = useState(true)
+  const [isLoading, setIsLoading] = useState(false);
+  const [isFetching, setIsFetching] = useState(true);
 
-  const userRole = dbUser?.role || "GUARD"
-  const isSupervisor = userRole === "SUPERVISOR" || userRole === "ADMIN" || userRole === "SUPER_ADMIN"
+  const userRole = dbUser?.role || "GUARD";
+  const isSupervisor =
+    userRole === "SUPERVISOR" ||
+    userRole === "ADMIN" ||
+    userRole === "SUPER_ADMIN";
 
   // Debug logging - shows on every render
-  console.log('[DASHBOARD RENDER] Current component state:', {
+  console.log("[DASHBOARD RENDER] Current component state:", {
     dbUser,
     userRole,
     isSupervisor,
@@ -71,168 +121,206 @@ export default function AdminDashboardPage() {
     equipmentCheckoutsLength: equipmentCheckouts.length,
     clerkUserId: user?.id,
     clerkEmail: user?.emailAddresses?.[0]?.emailAddress,
-    timestamp: new Date().toISOString()
-  })
+    timestamp: new Date().toISOString(),
+  });
 
-  console.log('[DASHBOARD RENDER] Which dialog should open?', {
+  console.log("[DASHBOARD RENDER] Which dialog should open?", {
     shouldShowSupervisorWorkflow: isSupervisor,
     supervisorClockInDialogOpen,
-    clockInDialogOpen
-  })
+    clockInDialogOpen,
+  });
 
   useEffect(() => {
     // Fetch user role from database first
     const fetchUser = async () => {
-      console.log('========================================')
-      console.log('[DASHBOARD] Starting user data fetch...')
-      console.log('[DASHBOARD] Clerk user from useUser:', {
+      console.log("========================================");
+      console.log("[DASHBOARD] Starting user data fetch...");
+      console.log("[DASHBOARD] Clerk user from useUser:", {
         id: user?.id,
         email: user?.emailAddresses?.[0]?.emailAddress,
         firstName: user?.firstName,
         lastName: user?.lastName,
-        fullClerkUser: user
-      })
+        fullClerkUser: user,
+      });
 
-      const userData = await getCurrentUser()
+      const userData = await getCurrentUser();
 
-      console.log('[DASHBOARD] User data returned from DB:', {
+      console.log("[DASHBOARD] User data returned from DB:", {
         exists: !!userData,
         email: userData?.email,
         role: userData?.role,
         clerkId: userData?.clerkId,
         id: userData?.id,
-        fullDbUser: userData
-      })
+        fullDbUser: userData,
+      });
 
       if (userData) {
-        console.log('[DASHBOARD] ✅ Setting dbUser state with role:', userData.role)
-        setDbUser({ role: userData.role as UserRole })
-        console.log('[DASHBOARD] ✅ State update called')
+        console.log(
+          "[DASHBOARD] ✅ Setting dbUser state with role:",
+          userData.role
+        );
+        setDbUser({ role: userData.role as UserRole });
+        console.log("[DASHBOARD] ✅ State update called");
       } else {
-        console.log('[DASHBOARD] ❌ No user data returned from getCurrentUser()')
+        console.log(
+          "[DASHBOARD] ❌ No user data returned from getCurrentUser()"
+        );
       }
-      console.log('========================================')
-    }
-    fetchUser()
-  }, [])
+      console.log("========================================");
+    };
+    fetchUser();
+  }, []);
 
   useEffect(() => {
     if (dbUser) {
-      fetchDashboardData()
+      fetchDashboardData();
     }
-  }, [dbUser?.role])
+  }, [dbUser?.role]);
 
   const fetchDashboardData = async () => {
     try {
-      setIsFetching(true)
+      setIsFetching(true);
 
       // Fetch active duty session using server action
-      const dutyResult = await getActiveDutySession()
+      const dutyResult = await getActiveDutySession();
       if (dutyResult.ok && dutyResult.data) {
-        setDutySession(dutyResult.data)
+        setDutySession(dutyResult.data);
 
         // If supervisor and has active duty, fetch equipment checkouts
         if (isSupervisor && dutyResult.data.id) {
-          const equipmentResult = await getEquipmentCheckouts(dutyResult.data.id)
+          const equipmentResult = await getEquipmentCheckouts(
+            dutyResult.data.id
+          );
           if (equipmentResult.ok && equipmentResult.data) {
-            setEquipmentCheckouts(equipmentResult.data)
+            setEquipmentCheckouts(equipmentResult.data);
           }
         }
       } else {
-        setEquipmentCheckouts([])
+        setEquipmentCheckouts([]);
       }
 
       // Fetch locations using server action
-      const locationsResult = await getActiveLocations()
+      const locationsResult = await getActiveLocations();
       if (locationsResult.ok && locationsResult.data) {
-        setLocations(locationsResult.data)
+        setLocations(locationsResult.data);
       }
 
       // Fetch stats data
-      const logsResult = await getTotalLogsCount()
+      const logsResult = await getTotalLogsCount();
       if (logsResult.ok && logsResult.data !== undefined) {
-        setTotalLogs(logsResult.data)
+        setTotalLogs(logsResult.data);
       }
 
       // Fetch today's shifts
-      const today = new Date()
-      today.setHours(0, 0, 0, 0)
-      const tomorrow = new Date(today)
-      tomorrow.setDate(tomorrow.getDate() + 1)
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const tomorrow = new Date(today);
+      tomorrow.setDate(tomorrow.getDate() + 1);
 
       const shiftsResult = await getShifts({
         startDate: today.toISOString(),
         endDate: tomorrow.toISOString(),
-      })
+      });
       if (shiftsResult.ok && shiftsResult.data) {
-        setTodayShifts(shiftsResult.data.length)
+        setTodayShifts(shiftsResult.data.length);
       }
 
       // Supervisor-only data
       if (isSupervisor) {
         // Fetch guards on duty using server action
-        const guardsResult = await getGuardsOnDuty()
+        const guardsResult = await getGuardsOnDuty();
         if (guardsResult.ok && guardsResult.data) {
-          setGuardsOnDuty(guardsResult.data)
+          setGuardsOnDuty(guardsResult.data);
         }
 
         // Fetch all incidents using server action
-        const incidentsResult = await getIncidents()
+        const incidentsResult = await getIncidents();
         if (incidentsResult.ok && incidentsResult.data) {
-          setIncidents(incidentsResult.data)
+          setIncidents(incidentsResult.data);
         }
 
         // Fetch active tour (IN_PROGRESS status)
-        const toursResult = await getTours({ status: "IN_PROGRESS" })
+        const toursResult = await getTours({ status: "IN_PROGRESS" });
         if (toursResult.ok && toursResult.data && toursResult.data.length > 0) {
-          setActiveTour(toursResult.data[0])
+          setActiveTour(toursResult.data[0]);
         } else {
-          setActiveTour(null)
+          setActiveTour(null);
+        }
+
+        // Fetch all users for guards and supervisors lists
+        const usersResult = await getUsers();
+        if (usersResult.ok && usersResult.data) {
+          const guards = usersResult.data.filter((u) => u.role === "GUARD");
+          const supervisors = usersResult.data.filter(
+            (u) =>
+              u.role === "SUPERVISOR" ||
+              u.role === "ADMIN" ||
+              u.role === "SUPER_ADMIN"
+          );
+          setAllGuards(
+            guards.map((g) => ({
+              id: g.id,
+              firstName: g.firstName,
+              lastName: g.lastName,
+              role: g.role,
+            }))
+          );
+          setAllSupervisors(
+            supervisors.map((s) => ({
+              id: s.id,
+              firstName: s.firstName,
+              lastName: s.lastName,
+              role: s.role,
+            }))
+          );
         }
       }
     } catch (error) {
-      console.error("Failed to fetch dashboard data:", error)
+      console.error("Failed to fetch dashboard data:", error);
     } finally {
-      setIsFetching(false)
+      setIsFetching(false);
     }
-  }
+  };
 
-  const handleClockIn = async (data: { locationId?: string; shiftId?: string }) => {
+  const handleClockIn = async (data: {
+    locationId?: string;
+    shiftId?: string;
+  }) => {
     try {
-      setIsLoading(true)
-      const result = await clockIn(data)
+      setIsLoading(true);
+      const result = await clockIn(data);
 
       if (!result.ok) {
-        throw new Error(result.message || "Failed to clock in")
+        throw new Error(result.message || "Failed to clock in");
       }
 
       // fetchDashboardData will get the full duty session with locationCheckIns
-      toast.success("Successfully clocked in!")
-      fetchDashboardData() // Refresh data to get full session details
+      toast.success("Successfully clocked in!");
+      fetchDashboardData(); // Refresh data to get full session details
     } catch (error: CatchError) {
-      toast.error(getErrorMessage(error))
-      throw error
+      toast.error(getErrorMessage(error));
+      throw error;
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   const handleSupervisorClockIn = async (data: {
-    carId: string
-    radioId: string
-    checkoutMileage: number
+    carId: string;
+    radioId: string;
+    checkoutMileage: number;
   }) => {
     try {
-      setIsLoading(true)
+      setIsLoading(true);
 
       // Step 1: Clock in (creates duty session at HQ)
-      const clockInResult = await clockIn({})
+      const clockInResult = await clockIn({});
 
       if (!clockInResult.ok) {
-        throw new Error(clockInResult.message || "Failed to clock in")
+        throw new Error(clockInResult.message || "Failed to clock in");
       }
 
-      const newDutySession = clockInResult.data!
+      const newDutySession = clockInResult.data!;
 
       // Step 2: Checkout equipment
       const equipmentResult = await checkoutEquipment({
@@ -240,159 +328,171 @@ export default function AdminDashboardPage() {
         carId: data.carId,
         radioId: data.radioId,
         checkoutMileage: data.checkoutMileage,
-      })
+      });
 
       if (!equipmentResult.ok) {
-        throw new Error(equipmentResult.message || "Failed to checkout equipment")
+        throw new Error(
+          equipmentResult.message || "Failed to checkout equipment"
+        );
       }
 
-      toast.success("Successfully clocked in and checked out equipment!")
-      fetchDashboardData() // Refresh data to get full session details
+      toast.success("Successfully clocked in and checked out equipment!");
+      fetchDashboardData(); // Refresh data to get full session details
     } catch (error: CatchError) {
-      toast.error(getErrorMessage(error))
-      throw error
+      toast.error(getErrorMessage(error));
+      throw error;
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   const handleClockOut = async () => {
-    if (!dutySession) return
+    if (!dutySession) return;
 
     try {
-      setIsLoading(true)
-      const result = await clockOut(dutySession.id)
+      setIsLoading(true);
+      const result = await clockOut(dutySession.id);
 
       if (!result.ok) {
-        throw new Error(result.message || "Failed to clock out")
+        throw new Error(result.message || "Failed to clock out");
       }
 
-      setDutySession(null)
-      toast.success("Successfully signed off duty!")
-      fetchDashboardData() // Refresh data
+      setDutySession(null);
+      toast.success("Successfully signed off duty!");
+      fetchDashboardData(); // Refresh data
     } catch (error: CatchError) {
-      toast.error(getErrorMessage(error))
+      toast.error(getErrorMessage(error));
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   const handleSupervisorClockOut = async (data: { checkinMileage: number }) => {
-    if (!dutySession) return
+    if (!dutySession) return;
 
     try {
-      setIsLoading(true)
+      setIsLoading(true);
 
       // Step 1: Return equipment
       const equipmentResult = await checkinEquipment({
         dutySessionId: dutySession.id,
         checkinMileage: data.checkinMileage,
-      })
+      });
 
       if (!equipmentResult.ok) {
-        throw new Error(equipmentResult.message || "Failed to return equipment")
+        throw new Error(
+          equipmentResult.message || "Failed to return equipment"
+        );
       }
 
       // Step 2: Clock out
-      const clockOutResult = await clockOut(dutySession.id)
+      const clockOutResult = await clockOut(dutySession.id);
 
       if (!clockOutResult.ok) {
-        throw new Error(clockOutResult.message || "Failed to clock out")
+        throw new Error(clockOutResult.message || "Failed to clock out");
       }
 
-      setDutySession(null)
-      setEquipmentCheckouts([])
-      toast.success("Successfully returned equipment and signed off duty!")
-      fetchDashboardData() // Refresh data
+      setDutySession(null);
+      setEquipmentCheckouts([]);
+      toast.success("Successfully returned equipment and signed off duty!");
+      fetchDashboardData(); // Refresh data
     } catch (error: CatchError) {
-      toast.error(getErrorMessage(error))
-      throw error
+      toast.error(getErrorMessage(error));
+      throw error;
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
-  const handleLocationCheckIn = async (data: { locationId: string; notes?: string }) => {
-    if (!dutySession) return
+  const handleLocationCheckIn = async (data: {
+    locationId: string;
+    notes?: string;
+  }) => {
+    if (!dutySession) return;
 
     try {
-      setIsLoading(true)
+      setIsLoading(true);
       const result = await createLocationCheckIn(
         dutySession.id,
         data.locationId,
         data.notes
-      )
+      );
 
       if (!result.ok) {
-        throw new Error(result.message || "Failed to record check-in")
+        throw new Error(result.message || "Failed to record check-in");
       }
 
-      toast.success("Location check-in recorded!")
-      fetchDashboardData() // Refresh to get updated check-ins
+      toast.success("Location check-in recorded!");
+      fetchDashboardData(); // Refresh to get updated check-ins
     } catch (error: CatchError) {
-      toast.error(getErrorMessage(error))
-      throw error
+      toast.error(getErrorMessage(error));
+      throw error;
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   const handleLocationCheckOut = async (checkInId: string) => {
     try {
-      setIsLoading(true)
-      const result = await checkoutFromLocation(checkInId)
+      setIsLoading(true);
+      const result = await checkoutFromLocation(checkInId);
 
       if (!result.ok) {
-        throw new Error(result.message || "Failed to check out")
+        throw new Error(result.message || "Failed to check out");
       }
 
-      toast.success("Checked out from location!")
-      fetchDashboardData() // Refresh to get updated check-ins
+      toast.success("Checked out from location!");
+      fetchDashboardData(); // Refresh to get updated check-ins
     } catch (error: CatchError) {
-      toast.error(getErrorMessage(error))
+      toast.error(getErrorMessage(error));
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
-  const handleIncidentReview = async (incidentId: string, data: { reviewNotes: string }) => {
+  const handleIncidentReview = async (
+    incidentId: string,
+    data: { reviewNotes: string }
+  ) => {
     try {
-      setIsLoading(true)
-      const result = await reviewIncident(incidentId, data.reviewNotes)
+      setIsLoading(true);
+      const result = await reviewIncident(incidentId, data.reviewNotes);
 
       if (!result.ok) {
-        throw new Error(result.message || "Failed to submit review")
+        throw new Error(result.message || "Failed to submit review");
       }
 
-      toast.success("Incident review submitted!")
-      fetchDashboardData() // Refresh incidents
+      toast.success("Incident review submitted!");
+      fetchDashboardData(); // Refresh incidents
     } catch (error: CatchError) {
-      toast.error(getErrorMessage(error))
-      throw error
+      toast.error(getErrorMessage(error));
+      throw error;
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   const openIncidentReview = (incident: IncidentReport) => {
-    setSelectedIncident(incident)
-    setReviewDialogOpen(true)
-  }
+    setSelectedIncident(incident);
+    setReviewDialogOpen(true);
+  };
 
   const openIncidentView = (incident: IncidentReport) => {
-    // In production, navigate to incident detail page
-    toast.info("Viewing incident details (detail page not yet implemented)")
-  }
+    setSelectedLog(incident);
+    setLogDetailDialogOpen(true);
+  };
 
   if (isFetching) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto" />
-          <p className="text-sm text-muted-foreground mt-2">Loading dashboard...</p>
+          <p className="text-sm text-muted-foreground mt-2">
+            Loading dashboard...
+          </p>
         </div>
       </div>
-    )
+    );
   }
 
   return (
@@ -415,8 +515,8 @@ export default function AdminDashboardPage() {
               equipmentCheckouts={equipmentCheckouts}
               clockInTime={dutySession.clockInTime}
               onClockOut={() => {
-                console.log('[DASHBOARD] Opening supervisor clock out dialog')
-                setSupervisorClockOutDialogOpen(true)
+                console.log("[DASHBOARD] Opening supervisor clock out dialog");
+                setSupervisorClockOutDialogOpen(true);
               }}
             />
           ) : (
@@ -424,69 +524,82 @@ export default function AdminDashboardPage() {
               dutySession={dutySession}
               userRole={userRole}
               onClockIn={() => {
-                console.log('[DASHBOARD] Clock in button clicked. Opening supervisor clock in dialog. Role:', userRole)
-                setSupervisorClockInDialogOpen(true)
+                console.log(
+                  "[DASHBOARD] Clock in button clicked. Opening supervisor clock in dialog. Role:",
+                  userRole
+                );
+                setSupervisorClockInDialogOpen(true);
               }}
               onClockOut={handleClockOut}
             />
           )}
 
           {/* Location Check-In Card - Show when supervisor is on duty */}
-          {dutySession && (() => {
-            // Find the current active location check-in (no checkOutTime)
-            const activeLocationCheckIn = dutySession.locationCheckIns?.find(
-              (checkIn) => !checkIn.checkOutTime
-            )
+          {dutySession &&
+            (() => {
+              // Find the current active location check-in (no checkOutTime)
+              const activeLocationCheckIn = dutySession.locationCheckIns?.find(
+                (checkIn) => !checkIn.checkOutTime
+              );
 
-            return (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">
-                    {activeLocationCheckIn ? "Current Location" : "Location Check-In"}
-                  </CardTitle>
-                  <CardDescription>
-                    {activeLocationCheckIn
-                      ? "You are currently checked in at this location"
-                      : "Check in at locations during your rounds"}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  {activeLocationCheckIn ? (
-                    <>
-                      {/* Show current location and checkout button */}
-                      <div className="flex items-start gap-3">
-                        <MapPin className="h-5 w-5 mt-0.5 text-primary" />
-                        <div className="flex-1">
-                          <p className="font-medium">{activeLocationCheckIn.location.name}</p>
-                          <p className="text-sm text-muted-foreground">
-                            Checked in at {new Date(activeLocationCheckIn.checkInTime).toLocaleTimeString()}
-                          </p>
+              return (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg">
+                      {activeLocationCheckIn
+                        ? "Current Location"
+                        : "Location Check-In"}
+                    </CardTitle>
+                    <CardDescription>
+                      {activeLocationCheckIn
+                        ? "You are currently checked in at this location"
+                        : "Check in at locations during your rounds"}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    {activeLocationCheckIn ? (
+                      <>
+                        {/* Show current location and checkout button */}
+                        <div className="flex items-start gap-3">
+                          <MapPin className="h-5 w-5 mt-0.5 text-primary" />
+                          <div className="flex-1">
+                            <p className="font-medium">
+                              {activeLocationCheckIn.location.name}
+                            </p>
+                            <p className="text-sm text-muted-foreground">
+                              Checked in at{" "}
+                              {new Date(
+                                activeLocationCheckIn.checkInTime
+                              ).toLocaleTimeString()}
+                            </p>
+                          </div>
                         </div>
-                      </div>
+                        <Button
+                          onClick={() =>
+                            handleLocationCheckOut(activeLocationCheckIn.id)
+                          }
+                          variant="outline"
+                          className="w-full"
+                          disabled={isLoading}
+                        >
+                          Check Out from Location
+                        </Button>
+                      </>
+                    ) : (
+                      /* Show check-in button */
                       <Button
-                        onClick={() => handleLocationCheckOut(activeLocationCheckIn.id)}
-                        variant="outline"
+                        onClick={() => setLocationCheckInDialogOpen(true)}
                         className="w-full"
                         disabled={isLoading}
                       >
-                        Check Out from Location
+                        <MapPin className="h-4 w-4 mr-2" />
+                        Check In at Location
                       </Button>
-                    </>
-                  ) : (
-                    /* Show check-in button */
-                    <Button
-                      onClick={() => setLocationCheckInDialogOpen(true)}
-                      className="w-full"
-                      disabled={isLoading}
-                    >
-                      <MapPin className="h-4 w-4 mr-2" />
-                      Check In at Location
-                    </Button>
-                  )}
-                </CardContent>
-              </Card>
-            )
-          })()}
+                    )}
+                  </CardContent>
+                </Card>
+              );
+            })()}
         </div>
       )}
 
@@ -562,7 +675,9 @@ export default function AdminDashboardPage() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Today's Shifts</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Today's Shifts
+            </CardTitle>
             <Calendar className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -611,6 +726,16 @@ export default function AdminDashboardPage() {
         incident={selectedIncident}
         onSubmit={handleIncidentReview}
         isLoading={isLoading}
+      />
+
+      <LogDetailDialog
+        log={selectedLog}
+        open={logDetailDialogOpen}
+        onOpenChange={setLogDetailDialogOpen}
+        currentUserId={dbUser?.id}
+        currentUserRole={userRole}
+        guards={allGuards}
+        supervisors={allSupervisors}
       />
     </div>
   );
