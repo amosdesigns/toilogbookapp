@@ -746,7 +746,7 @@ export async function bulkApproveTimesheets(
 
         approved++
       } catch (error) {
-        console.error(`Error approving timesheet ${id}:`, error)
+        console.error('Error approving timesheet %s:', id, error)
         errors.push(`Timesheet ${id}: ${error instanceof Error ? error.message : 'Unknown error'}`)
         failed++
       }
