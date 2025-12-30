@@ -192,6 +192,7 @@ export interface Log {
 
 export interface IncidentReport {
   id: string
+  type: string
   title: string
   description: string
   severity: IncidentSeverity | null
@@ -200,11 +201,13 @@ export interface IncidentReport {
   location: {
     id?: string
     name: string
+    address: string | null
   }
   user: {
     id?: string
     firstName: string
     lastName: string
+    email: string
   }
   peopleInvolved?: string | null
   witnesses?: string | null
@@ -215,7 +218,7 @@ export interface IncidentReport {
   reviewedAt?: Date | null
   reviewNotes?: string | null
   createdAt: Date
-  updatedAt?: Date
+  updatedAt: Date
 }
 
 // ============================================================================

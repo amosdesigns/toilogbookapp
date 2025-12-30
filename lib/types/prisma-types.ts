@@ -237,11 +237,13 @@ export type IncidentWithDetails = Prisma.LogGetPayload<{
       select: {
         firstName: true
         lastName: true
+        email: true
       }
     }
     location: {
       select: {
         name: true
+        address: true
       }
     }
   }
