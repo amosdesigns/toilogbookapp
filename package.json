@@ -47,7 +47,11 @@
     "dotenv": "^17.2.3",
     "lucide-react": "^0.554.0",
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
     "next": "^16.0.7",
+=======
+    "next": "^16.1.1",
+>>>>>>> Stashed changes
 =======
     "next": "^16.1.1",
 >>>>>>> Stashed changes
