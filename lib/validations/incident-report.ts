@@ -61,3 +61,51 @@ export type UpdateIncidentReportInput = Omit<z.infer<typeof updateIncidentReport
 }
 
 export type IncidentSeverity = z.infer<typeof IncidentSeverityEnum>
+
+/**
+ * Validation schema for incident report PDF generation form
+ * Used when generating printable incident reports from logs
+ */
+export const incidentReportFormSchema = z.object({
+  // Report identification
+  incidentNumber: z.string().min(1, "Incident number is required"),
+  incidentTime: z.string().min(1, "Incident time is required"),
+
+  // Dates
+  reportDate: z.string().min(1, "Report date is required"),
+  incidentDate: z.string().min(1, "Incident date is required"),
+
+  // Location and personnel
+  location: z.string().min(1, "Location is required"),
+  guardOnDuty: z.string().min(1, "Guard on duty is required"),
+  supervisorOnDuty: z.string().min(1, "Supervisor on duty is required"),
+  whoWasNotified: z.string().optional(),
+
+  // Incident details
+  incidentDescription: z
+    .string()
+    .min(50, "Incident description must be at least 50 characters")
+    .max(5000, "Incident description must be less than 5000 characters"),
+
+  actionsTaken: z
+    .string()
+    .min(20, "Actions taken must be at least 20 characters")
+    .max(5000, "Actions taken must be less than 5000 characters"),
+
+  followUp: z.string().max(2000, "Follow up must be less than 2000 characters").optional(),
+
+  // Notification recipients - array of user IDs
+  notifyUsers: z.array(z.string()).optional().default([]),
+})
+
+export type IncidentReportFormData = z.infer<typeof incidentReportFormSchema>
+
+/**
+ * Helper to generate incident number from log ID
+ * Format: INC-YYYY-{logId}
+ * Deterministic based on log ID
+ */
+export function generateIncidentNumber(logId: string): string {
+  const year = new Date().getFullYear()
+  return `INC-${year}-${logId}`
+}
