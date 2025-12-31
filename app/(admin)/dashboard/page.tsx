@@ -69,7 +69,7 @@ type EquipmentCheckoutWithEquipment = SupervisorEquipmentCheckout & {
 
 export default function AdminDashboardPage() {
   const { user } = useUser();
-  const [dbUser, setDbUser] = useState<{ role: UserRole } | null>(null);
+  const [dbUser, setDbUser] = useState<{ id: string; role: UserRole } | null>(null);
   const [dutySession, setDutySession] =
     useState<DutySessionWithCheckIns | null>(null);
   const [locations, setLocations] = useState<ActiveLocationData[]>([]);
@@ -159,7 +159,7 @@ export default function AdminDashboardPage() {
           "[DASHBOARD] ✅ Setting dbUser state with role:",
           userData.role
         );
-        setDbUser({ role: userData.role as UserRole });
+        setDbUser({ id: userData.id, role: userData.role as UserRole });
         console.log("[DASHBOARD] ✅ State update called");
       } else {
         console.log(

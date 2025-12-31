@@ -10,6 +10,7 @@ import { formatDateTime } from "@/lib/utils"
 
 interface IncidentReport {
   id: string
+  type: string
   title: string
   description: string
   severity: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL" | null
@@ -17,14 +18,17 @@ interface IncidentReport {
   incidentTime: Date | null
   location: {
     name: string
+    address: string | null
   }
   user: {
     firstName: string
     lastName: string
+    email: string
   }
   reviewedBy?: string | null
   reviewedAt?: Date | null
   createdAt: Date
+  updatedAt: Date
 }
 
 interface IncidentReportsStatusProps {

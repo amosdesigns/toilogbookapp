@@ -80,11 +80,13 @@ export async function getIncidents(): Promise<ActionResult<IncidentWithDetails[]
           select: {
             firstName: true,
             lastName: true,
+            email: true,
           },
         },
         location: {
           select: {
             name: true,
+            address: true,
           },
         },
       },
