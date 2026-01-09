@@ -5,6 +5,13 @@ import { useUser } from "@clerk/nextjs"
 import { syncUserToDatabase } from "@/lib/auth/sync-user"
 
 /**
+ * @deprecated This component is no longer used as of 2025-01-09
+ *
+ * User sync is now handled server-side via `getCurrentUserWithSync()` in layouts.
+ * This eliminates hydration errors and race conditions.
+ *
+ * Keeping this file for reference only - it's not imported anywhere.
+ *
  * This component automatically syncs Clerk users to the database
  * Add it to your root layout so it runs on every page load
  */
