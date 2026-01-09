@@ -1,7 +1,7 @@
 import { AdminSidebar } from "@/components/layouts/admin/admin-sidebar"
 import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar"
 import { AuthenticatedLayoutWrapper } from "@/components/layouts/authenticated-layout-wrapper"
-import { getCurrentUser } from "@/lib/auth/sync-user"
+import { getCurrentUserWithSync } from "@/lib/auth/sync-user"
 import { redirect } from "next/navigation"
 
 export default async function AdminLayout({
@@ -9,7 +9,7 @@ export default async function AdminLayout({
 }: {
   children: React.ReactNode
 }) {
-  const user = await getCurrentUser()
+  const user = await getCurrentUserWithSync()
 
   if (!user) {
     redirect("/sign-in")

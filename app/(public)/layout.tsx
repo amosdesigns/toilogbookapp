@@ -1,7 +1,7 @@
 import { MobileNav } from "@/components/layouts/public/mobile-nav"
 import { MobileHeader } from "@/components/layouts/public/mobile-header"
 import { AuthenticatedLayoutWrapper } from "@/components/layouts/authenticated-layout-wrapper"
-import { getCurrentUser } from "@/lib/auth/sync-user"
+import { getCurrentUserWithSync } from "@/lib/auth/sync-user"
 import { redirect } from "next/navigation"
 
 export default async function PublicLayout({
@@ -9,7 +9,7 @@ export default async function PublicLayout({
 }: {
   children: React.ReactNode
 }) {
-  const user = await getCurrentUser()
+  const user = await getCurrentUserWithSync()
 
   if (!user) {
     redirect("/sign-in")
