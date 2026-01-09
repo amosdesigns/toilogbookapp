@@ -316,14 +316,20 @@ The application serves two distinct user groups with different UX patterns:
 - **Authorization Utilities**: `lib/utils/auth.ts` (e.g., `isAdmin()`, `canModifyLog()`)
 - **Role-Based Redirect**: Guards → `/`, Others → `/admin/dashboard`
 
-**IMPORTANT: Role Management Architecture**
+**IMPORTANT: Role Management & User Sync Architecture**
 
 - **Roles are ONLY managed in the database** - The database is the single source of truth
 - **NEVER use Clerk's `publicMetadata.role`** for authorization checks
-- **Server Components**: Use `getCurrentUser()` from `lib/auth/sync-user.ts` to get user with database role
+- **Server Components**: Use `getCurrentUserWithSync()` from `lib/auth/sync-user.ts` to get user with database role
+  - This function automatically syncs users from Clerk to database if they don't exist
+  - Handles cross-environment syncing (different Clerk IDs between dev/prod)
+  - Used in all authenticated layouts to ensure users are synced before rendering
 - **Client Components**: Pass role as prop from server component, never read from Clerk directly
 - Clerk is used for authentication only, NOT for authorization
 - The `syncUserToDatabase()` function syncs user info FROM Clerk TO database, but does NOT sync roles back to Clerk
+- **User Sync**: All authenticated layouts use `getCurrentUserWithSync()` which automatically syncs users on every page load
+- **Manual Sync**: `/api/sync-user` endpoint available for troubleshooting (visit while logged in)
+- **Sync Logging**: All sync operations log with `[PROD]` or `[DEV]` prefix for environment clarity
 
 ### Database Schema (Key Models)
 

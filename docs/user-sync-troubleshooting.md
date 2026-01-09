@@ -4,10 +4,11 @@ This guide helps troubleshoot issues where users can log into Clerk but aren't s
 
 ## How User Sync Works
 
-The application uses a **dual-sync approach**:
+The application uses **server-side sync only**:
 
-1. **Server-side sync (Primary)**: When a user accesses any authenticated page, `getCurrentUserWithSync()` automatically syncs them if they don't exist in the database
-2. **Client-side sync (Backup)**: The `UserSyncProvider` component also attempts to sync users in the background
+1. **Server-side sync**: When a user accesses any authenticated page, `getCurrentUserWithSync()` automatically syncs them if they don't exist in the database
+2. **Automatic**: Happens on every page load before the layout renders
+3. **Reliable**: No race conditions or hydration issues since it's all server-side
 
 ## Common Issues
 

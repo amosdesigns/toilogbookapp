@@ -3,7 +3,6 @@ import { Geist, Geist_Mono } from "next/font/google";
 import { ClerkProvider } from "@clerk/nextjs";
 import { Toaster } from "@/components/ui/sonner";
 import { ThemeProvider } from "@/components/theme-provider";
-import { UserSyncProvider } from "@/components/auth/user-sync-provider";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -48,15 +47,13 @@ export default function RootLayout({
             enableSystem
             disableTransitionOnChange
           >
-            <UserSyncProvider>
-              {/* Mobile: full screen, Large screens: centered with max width */}
-              <div className="min-h-screen lg:flex lg:items-center lg:justify-center lg:p-8">
-                <div className="w-full 2xl:shadow-2xl 2xl:rounded-2xl 2xl:overflow-hidden 2xl:bg-background/95 2xl:backdrop-blur-sm">
-                  {children}
-                </div>
+            {/* Mobile: full screen, Large screens: centered with max width */}
+            <div className="min-h-screen lg:flex lg:items-center lg:justify-center lg:p-8">
+              <div className="w-full 2xl:shadow-2xl 2xl:rounded-2xl 2xl:overflow-hidden 2xl:bg-background/95 2xl:backdrop-blur-sm">
+                {children}
               </div>
-              <Toaster />
-            </UserSyncProvider>
+            </div>
+            <Toaster />
           </ThemeProvider>
         </body>
       </html>
