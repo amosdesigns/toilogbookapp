@@ -183,7 +183,7 @@ export function GuardsOnDutyTable({ guards, onRefresh }: GuardsOnDutyTableProps)
           <DialogHeader>
             <DialogTitle>Send Message to {selectedGuard?.userName}</DialogTitle>
             <DialogDescription>
-              Send a message to the guard while they're on duty
+              Send a message to the guard while they&apos;re on duty
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
@@ -194,7 +194,7 @@ export function GuardsOnDutyTable({ guards, onRefresh }: GuardsOnDutyTableProps)
                 placeholder="Type your message here..."
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
-                className="min-h-[120px]"
+                className="min-h-30"
                 disabled={isSending}
               />
             </div>
@@ -223,7 +223,7 @@ export function GuardsOnDutyTable({ guards, onRefresh }: GuardsOnDutyTableProps)
           <DialogHeader>
             <DialogTitle>Manage Duty Session</DialogTitle>
             <DialogDescription>
-              Manage {selectedGuard?.userName}'s duty session
+              Manage {selectedGuard?.userName}&apos;s duty session
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">

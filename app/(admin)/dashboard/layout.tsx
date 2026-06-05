@@ -15,6 +15,11 @@ export default async function AdminLayout({
     redirect("/sign-in")
   }
 
+  // Guards only have access to the public interface
+  if (user.role === "GUARD") {
+    redirect("/")
+  }
+
   return (
     <SidebarProvider>
       <div className="flex min-h-screen w-full">

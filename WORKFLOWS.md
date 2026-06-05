@@ -184,11 +184,11 @@ Calendar view showing:
 
 ⚠️ 2 HIGH PRIORITY INCIDENTS NEED REVIEW
 ┌─────────────────────────────────────┐
-│  🚨 Critical Incident                │
+│  🚨 Critical Incident               │
 │  Sloop Marina - 2h ago              │
 │  [Review Now]                       │
 ├─────────────────────────────────────┤
-│  ⚠️  High Priority Incident          │
+│  ⚠️  High Priority Incident         │
 │  East Marina - 4h ago               │
 │  [Review Now]                       │
 └─────────────────────────────────────┘
@@ -196,7 +196,7 @@ Calendar view showing:
 ┌─────────────────────────────────────┐
 │  📍 Current Status                  │
 │  ● On Roaming Duty                  │
-│  ⏱ Started: 7:00 AM (3h ago)       │
+│  ⏱ Started: 7:00 AM (3h ago)        │
 │  [Sign Off Duty]                    │
 └─────────────────────────────────────┘
 
@@ -496,4 +496,3 @@ Sign In → Admin Dashboard → [Full System Management]
 | **Shift Management** | View only | Create/Edit | Full control |
 | **User Management** | No | No | Yes |
 | **Hard Delete** | No | No | SuperAdmin only |
-
