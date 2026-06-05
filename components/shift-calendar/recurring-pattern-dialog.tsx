@@ -73,12 +73,24 @@ const DAYS_OF_WEEK = [
   { value: 6, label: 'Saturday' },
 ]
 
+type ExistingPattern = {
+  id: string
+  name: string
+  location?: { id: string } | null
+  startTime: string
+  endTime: string
+  startDate: string
+  endDate?: string | null
+  daysOfWeek: string
+  userAssignments?: Array<{ user: { id: string }; role: string | null }>
+}
+
 interface RecurringPatternDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   locations: Location[]
   users: User[]
-  pattern?: any
+  pattern?: ExistingPattern
   onSuccess?: () => void
 }
 
@@ -116,7 +128,7 @@ export function RecurringPatternDialog({
     }
     if (pattern?.userAssignments) {
       setSelectedUsers(
-        pattern.userAssignments.map((a: any) => ({
+        pattern.userAssignments.map((a) => ({
           userId: a.user.id,
           role: a.role,
         }))

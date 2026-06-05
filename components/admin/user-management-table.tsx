@@ -152,7 +152,7 @@ export function UserManagementTable({
                       onValueChange={(value) => handleRoleChange(user.id, value as UserRole)}
                       disabled={isArchived || isUpdating}
                     >
-                      <SelectTrigger className="w-[140px]">
+                      <SelectTrigger className="w-35">
                         <SelectValue asChild>
                           <Badge className={roleColors[user.role]}>
                             {user.role.replace("_", " ")}
