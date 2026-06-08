@@ -61,7 +61,7 @@ test.describe('Duty Management - Guard', () => {
 
 test.describe('Duty Management - Supervisor', () => {
   test('supervisor can clock in for roaming duty', async ({ supervisorPage }) => {
-    await supervisorPage.goto('/admin/dashboard')
+    await supervisorPage.goto('/dashboard')
 
     const status = await getDutyStatus(supervisorPage)
     if (status === 'on-duty') {
@@ -79,7 +79,7 @@ test.describe('Duty Management - Supervisor', () => {
   test('supervisor can check in to locations during roaming duty', async ({
     supervisorPage,
   }) => {
-    await supervisorPage.goto('/admin/dashboard')
+    await supervisorPage.goto('/dashboard')
 
     // Ensure supervisor is on duty
     const status = await getDutyStatus(supervisorPage)
