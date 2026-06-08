@@ -100,8 +100,8 @@ export function IncidentReviewDialog({
         onOpenChange(false)
         setSuccess(false)
       }, 1500)
-    } catch (err: any) {
-      setError(err.message || "Failed to submit review")
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Failed to submit review")
     }
   }
 
@@ -109,7 +109,7 @@ export function IncidentReviewDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-175 max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <div className="flex items-start justify-between">
             <div>
@@ -220,7 +220,7 @@ export function IncidentReviewDialog({
                       <FormControl>
                         <Textarea
                           placeholder="Document your review, assessment, and any additional actions or recommendations..."
-                          className="min-h-[120px]"
+                          className="min-h-30"
                           disabled={isLoading}
                           {...field}
                         />
