@@ -68,7 +68,7 @@ export default async function globalSetup(config: FullConfig) {
 
     await context.storageState({ path: file })
     await context.close()
-    console.log(`[global-setup] ✅ Saved auth state: ${file} (userId: ${userId})`)
+    console.log(`[global-setup] ✅ Saved auth state: ${file}`)
   }
 
   await browser.close()
