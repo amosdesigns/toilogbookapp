@@ -125,7 +125,7 @@ export default function ShiftsPage() {
             const isYesterday = index === 0
 
             return (
-              <div key={day.toISOString()} className="w-[280px] shrink-0">
+              <div key={day.toISOString()} className="w-70 shrink-0">
                 {/* Day header */}
                 <div
                   className={cn(
@@ -150,7 +150,7 @@ export default function ShiftsPage() {
                 </div>
 
                 {/* Shifts for this day */}
-                <div className="space-y-3 min-h-[300px]">
+                <div className="space-y-3 min-h-75">
                   {dayShifts.length === 0 ? (
                     <Card className="p-6 text-center border-dashed">
                       <p className="text-sm text-muted-foreground">No shifts</p>
@@ -243,7 +243,7 @@ export default function ShiftsPage() {
           </div>
           <div className="flex items-center gap-2">
             <div className="w-4 h-4 bg-muted/30 border-2 border-muted rounded opacity-60"></div>
-            <span>Other guards' shifts</span>
+            <span>Other guards&apos; shifts</span>
           </div>
         </div>
       </Card>

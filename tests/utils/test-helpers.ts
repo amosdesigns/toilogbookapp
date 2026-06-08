@@ -8,28 +8,37 @@ import type { Page } from '@playwright/test'
  * Wait for a toast notification to appear
  */
 export async function waitForToast(page: Page, message?: string | RegExp) {
+  // 30s is generous but prevents the default test-level timeout (180s) from
+  // being consumed by a toast that never fires due to a slow DB response.
+  const timeout = 30000
   if (message) {
     if (typeof message === 'string') {
-      await page.waitForSelector(`[data-sonner-toast]:has-text("${message}")`)
+      await page.waitForSelector(`[data-sonner-toast]:has-text("${message}")`, { timeout })
     } else {
-      // For RegExp, wait for the toast and check the text content
-      await page.waitForSelector('[data-sonner-toast]')
-      await page.locator('[data-sonner-toast]').filter({ hasText: message }).first().waitFor()
+      await page.waitForSelector('[data-sonner-toast]', { timeout })
+      await page.locator('[data-sonner-toast]').filter({ hasText: message }).first().waitFor({ timeout })
     }
   } else {
-    await page.waitForSelector('[data-sonner-toast]')
+    await page.waitForSelector('[data-sonner-toast]', { timeout })
   }
 }
 
 /**
- * Get the current duty status from the UI
+ * Get the current duty status from the UI.
+ *
+ * DutyStatusCard renders:
+ *   - on duty  → "Sign Off Duty" button
+ *   - off duty → "Headquarters Check-In Only" button
  */
 export async function getDutyStatus(page: Page): Promise<'on-duty' | 'off-duty'> {
-  const onDutyButton = page.locator('button:has-text("Sign Off Duty")')
-  const offDutyButton = page.locator('button:has-text("Report for Duty")')
+  // Wait for the loading spinner to disappear and either button to appear.
+  await page.waitForSelector(
+    'button:has-text("Sign Off Duty"), button:has-text("Headquarters Check-In Only")',
+    { timeout: 20000 },
+  )
 
-  const isOnDuty = await onDutyButton.isVisible()
-  const isOffDuty = await offDutyButton.isVisible()
+  const isOnDuty = await page.locator('button:has-text("Sign Off Duty")').isVisible()
+  const isOffDuty = await page.locator('button:has-text("Headquarters Check-In Only")').isVisible()
 
   if (isOnDuty) return 'on-duty'
   if (isOffDuty) return 'off-duty'
@@ -38,18 +47,18 @@ export async function getDutyStatus(page: Page): Promise<'on-duty' | 'off-duty'>
 }
 
 /**
- * Clock in as a guard or supervisor
+ * Clock in as a guard or supervisor.
+ * Clicks the "Headquarters Check-In Only" button to open the clock-in dialog.
  */
 export async function clockIn(
   page: Page,
   role: 'guard' | 'supervisor',
   location?: string
 ) {
-  await page.click('button:has-text("Report for Duty")')
+  await page.click('button:has-text("Headquarters Check-In Only")')
   await page.waitForSelector('[role="dialog"]')
 
   if (role === 'guard' && location) {
-    // Select location for guard
     await page.click('[role="combobox"]')
     await page.click(`[role="option"]:has-text("${location}")`)
   }
@@ -78,7 +87,6 @@ export async function createLog(
   await page.goto('/logs')
   await page.click('button:has-text("New Log")')
 
-  // Fill in the form
   await page.selectOption('select[name="type"]', type)
   await page.fill('input[name="title"]', title)
   await page.fill('textarea[name="description"]', description)
@@ -99,7 +107,7 @@ export async function navigateTo(
     logs: '/logs',
     shifts: '/shifts',
     profile: '/profile',
-    dashboard: '/admin/dashboard',
+    dashboard: '/dashboard',
   }
 
   await page.goto(routes[destination])
