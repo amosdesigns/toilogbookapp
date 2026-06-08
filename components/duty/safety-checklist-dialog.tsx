@@ -69,7 +69,7 @@ export function SafetyChecklistDialog({
           setChecklistItems(result.data)
 
           // Initialize form values
-          const initialItems: any = {}
+          const initialItems: ChecklistFormData['items'] = {}
           result.data.forEach((item) => {
             initialItems[item.id] = {
               checked: false,

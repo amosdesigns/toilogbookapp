@@ -80,14 +80,14 @@ export function LocationCheckInDialog({
         onOpenChange(false)
         setSuccess(false)
       }, 1500)
-    } catch (err: any) {
-      setError(err.message || "Failed to record check-in")
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Failed to record check-in")
     }
   }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-125">
         <DialogHeader>
           <DialogTitle>Location Check-In</DialogTitle>
           <DialogDescription>
@@ -157,7 +157,7 @@ export function LocationCheckInDialog({
                     <FormControl>
                       <Textarea
                         placeholder="Any observations or notes about this location..."
-                        className="min-h-[100px]"
+                        className="min-h-25"
                         disabled={isLoading}
                         {...field}
                       />

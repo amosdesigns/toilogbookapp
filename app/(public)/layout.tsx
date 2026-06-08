@@ -4,6 +4,8 @@ import { AuthenticatedLayoutWrapper } from "@/components/layouts/authenticated-l
 import { getCurrentUserWithSync } from "@/lib/auth/sync-user"
 import { redirect } from "next/navigation"
 
+export const dynamic = 'force-dynamic'
+
 export default async function PublicLayout({
   children,
 }: {
