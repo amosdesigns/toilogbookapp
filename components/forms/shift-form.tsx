@@ -144,7 +144,6 @@ export function ShiftForm({
                           field.onChange(date)
                         }
                       }}
-                      initialFocus
                     />
                     <div className="p-3 border-t">
                       <Input
@@ -207,7 +206,6 @@ export function ShiftForm({
                           field.onChange(date)
                         }
                       }}
-                      initialFocus
                     />
                     <div className="p-3 border-t">
                       <Input
