@@ -91,7 +91,7 @@ test.describe('Log Management', () => {
 
 test.describe('Log Management - Supervisor', () => {
   test('supervisor can review incident reports', async ({ supervisorPage }) => {
-    await supervisorPage.goto('/admin/dashboard')
+    await supervisorPage.goto('/dashboard')
 
     // Look for unreviewed incidents section
     const incidentsSection = supervisorPage.locator('text=/unreviewed|incident/i').first()
@@ -115,7 +115,7 @@ test.describe('Log Management - Supervisor', () => {
   })
 
   test('supervisor can view location logbook', async ({ supervisorPage }) => {
-    await supervisorPage.goto('/admin/dashboard')
+    await supervisorPage.goto('/dashboard')
 
     // Find location logbook section
     const logbookSection = supervisorPage.locator('text=/location logbook/i')

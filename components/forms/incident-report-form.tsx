@@ -165,7 +165,6 @@ export function IncidentReportForm({
                         field.onChange(date)
                       }
                     }}
-                    initialFocus
                   />
                   <div className="p-3 border-t">
                     <Input
@@ -201,7 +200,7 @@ export function IncidentReportForm({
                 <Input placeholder="Brief summary of incident" {...field} />
               </FormControl>
               <FormDescription>
-                Short description (e.g., "Unauthorized access attempt")
+                Short description (e.g., &quot;Unauthorized access attempt&quot;)
               </FormDescription>
               <FormMessage />
             </FormItem>
@@ -247,7 +246,7 @@ export function IncidentReportForm({
               <FormControl>
                 <Textarea
                   placeholder="Provide a detailed account of what happened..."
-                  className="min-h-[150px]"
+                  className="min-h-37.5"
                   {...field}
                 />
               </FormControl>
@@ -269,7 +268,7 @@ export function IncidentReportForm({
               <FormControl>
                 <Textarea
                   placeholder="Names, descriptions, roles..."
-                  className="min-h-[80px]"
+                  className="min-h-20"
                   {...field}
                 />
               </FormControl>
@@ -291,7 +290,7 @@ export function IncidentReportForm({
               <FormControl>
                 <Textarea
                   placeholder="Names, contact information..."
-                  className="min-h-[80px]"
+                  className="min-h-20"
                   {...field}
                 />
               </FormControl>
@@ -313,7 +312,7 @@ export function IncidentReportForm({
               <FormControl>
                 <Textarea
                   placeholder="What steps did you take in response?"
-                  className="min-h-[100px]"
+                  className="min-h-25"
                   {...field}
                 />
               </FormControl>
@@ -378,7 +377,7 @@ export function IncidentReportForm({
                 <FormControl>
                   <Textarea
                     placeholder="What follow-up actions are needed?"
-                    className="min-h-[100px]"
+                    className="min-h-25"
                     {...field}
                   />
                 </FormControl>
