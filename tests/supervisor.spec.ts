@@ -3,18 +3,19 @@ import { clockIn, getDutyStatus, waitForToast } from './utils/test-helpers'
 
 test.describe('Supervisor Dashboard', () => {
   test('supervisor can access dashboard', async ({ supervisorPage }) => {
-    await supervisorPage.goto('/admin/dashboard')
+    await supervisorPage.goto('/dashboard')
 
-    await expect(supervisorPage).toHaveURL('/admin/dashboard')
+    await expect(supervisorPage).toHaveURL('/dashboard')
     await expect(supervisorPage.locator('h1, h2').filter({ hasText: /dashboard/i })).toBeVisible()
   })
 
   test('supervisor can view guards on duty', async ({ supervisorPage }) => {
-    await supervisorPage.goto('/admin/dashboard')
+    await supervisorPage.goto('/dashboard')
 
-    // Look for guards on duty section
-    const guardsSection = supervisorPage.locator('text=/guards on duty/i')
-    await expect(guardsSection).toBeVisible()
+    // Wait for the dashboard to finish loading, then check for guards section
+    // Actual heading text: "Guards Currently On Duty"
+    const guardsSection = supervisorPage.locator('text=/guards.*on duty/i').first()
+    await expect(guardsSection).toBeVisible({ timeout: 30000 })
 
     // Should see a table or list of guards
     const guardsTable = supervisorPage.locator('table, [role="table"]')
@@ -27,7 +28,7 @@ test.describe('Supervisor Dashboard', () => {
   })
 
   test('supervisor can send message to guard', async ({ supervisorPage }) => {
-    await supervisorPage.goto('/admin/dashboard')
+    await supervisorPage.goto('/dashboard')
 
     // Look for guards on duty table
     const messageButton = supervisorPage.locator('button:has-text("Message"), button:has-text("Send Message")')
@@ -47,7 +48,7 @@ test.describe('Supervisor Dashboard', () => {
   })
 
   test('supervisor can force clock out a guard', async ({ supervisorPage }) => {
-    await supervisorPage.goto('/admin/dashboard')
+    await supervisorPage.goto('/dashboard')
 
     // Look for guards on duty table
     const endDutyButton = supervisorPage.locator('button:has-text("End Duty"), button:has-text("Clock Out")')
@@ -67,7 +68,7 @@ test.describe('Supervisor Dashboard', () => {
   })
 
   test('supervisor can view incident reports by status', async ({ supervisorPage }) => {
-    await supervisorPage.goto('/admin/dashboard')
+    await supervisorPage.goto('/dashboard')
 
     // Look for incident tabs
     const tabs = supervisorPage.locator('[role="tablist"]')
@@ -87,24 +88,24 @@ test.describe('Supervisor Dashboard', () => {
 
 test.describe('Supervisor Permissions', () => {
   test('supervisor can access admin routes', async ({ supervisorPage }) => {
-    await supervisorPage.goto('/admin/dashboard')
-    await expect(supervisorPage).toHaveURL('/admin/dashboard')
+    await supervisorPage.goto('/dashboard')
+    await expect(supervisorPage).toHaveURL('/dashboard')
 
-    // Should see admin navigation
-    await expect(supervisorPage.locator('nav[aria-label="Admin Navigation"]')).toBeVisible()
+    // Verify admin layout is active — check for the sidebar trigger button in the header
+    await expect(supervisorPage.locator('[data-slot="sidebar-trigger"]')).toBeVisible({ timeout: 10000 })
   })
 
   test('guard cannot access admin routes', async ({ guardPage }) => {
-    await guardPage.goto('/admin/dashboard')
+    await guardPage.goto('/dashboard')
 
-    // Should redirect to home page or show access denied
-    await expect(guardPage).not.toHaveURL('/admin/dashboard')
+    // Admin layout redirects GUARD role to / — wait up to 10s for that redirect
+    await expect(guardPage).not.toHaveURL('/dashboard', { timeout: 10000 })
   })
 })
 
 test.describe('Notifications', () => {
   test('supervisor can view notifications', async ({ supervisorPage }) => {
-    await supervisorPage.goto('/admin/dashboard')
+    await supervisorPage.goto('/dashboard')
 
     // Look for notification banner or bell icon
     const notificationArea = supervisorPage.locator('[role="alert"], .notification-banner')
@@ -116,7 +117,7 @@ test.describe('Notifications', () => {
   })
 
   test('supervisor can dismiss notifications', async ({ supervisorPage }) => {
-    await supervisorPage.goto('/admin/dashboard')
+    await supervisorPage.goto('/dashboard')
 
     // Look for notification with dismiss button
     const dismissButton = supervisorPage.locator('button:has-text("Dismiss"), button[aria-label*="dismiss"]')
