@@ -17,6 +17,11 @@ export default async function PublicLayout({
     redirect("/sign-in")
   }
 
+  // Non-guards belong in the admin interface
+  if (user.role !== "GUARD") {
+    redirect("/dashboard")
+  }
+
   return (
     <div className="flex flex-col min-h-screen bg-background">
       <MobileHeader title="Marina Guard" user={user} />
