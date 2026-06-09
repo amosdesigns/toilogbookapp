@@ -120,8 +120,8 @@ export function ClockInDialog({
       form.reset()
       setChecklistState({})
       onOpenChange(false)
-    } catch (err: any) {
-      setError(err.message || "Failed to clock in")
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Failed to clock in")
     }
   }
 
@@ -134,7 +134,7 @@ export function ClockInDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-150 max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Report for Duty</DialogTitle>
           <DialogDescription>
@@ -178,7 +178,7 @@ export function ClockInDialog({
                         </SelectContent>
                       </Select>
                       <FormDescription>
-                        Choose where you'll be stationed
+                        Choose where you&apos;ll be stationed
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
@@ -235,7 +235,7 @@ export function ClockInDialog({
                       Please verify all safety equipment before starting your shift
                     </p>
 
-                    <div className="space-y-3 max-h-[300px] overflow-y-auto">
+                    <div className="space-y-3 max-h-75 overflow-y-auto">
                       {safetyItems.map((item) => (
                         <div key={item.id} className="border rounded-md p-3 space-y-2">
                           <div className="flex items-start gap-3">

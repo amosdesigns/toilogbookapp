@@ -227,7 +227,7 @@ export default function ShiftsPage() {
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-4">
             <Select value={selectedLocation} onValueChange={setSelectedLocation}>
-              <SelectTrigger className="w-[250px]">
+              <SelectTrigger className="w-62.5">
                 <SelectValue placeholder="All Locations" />
               </SelectTrigger>
               <SelectContent>
@@ -260,7 +260,7 @@ export default function ShiftsPage() {
         </div>
 
         {isLoading ? (
-          <div className="flex items-center justify-center h-[600px]">
+          <div className="flex items-center justify-center h-150">
             <p className="text-muted-foreground">Loading shifts...</p>
           </div>
         ) : (
@@ -300,7 +300,7 @@ export default function ShiftsPage() {
         }}
         locations={locations}
         users={users}
-        shift={selectedShift}
+        shift={selectedShift ?? undefined}
         defaultDate={newShiftDate || undefined}
         defaultHour={newShiftHour}
         onSuccess={handleSuccess}

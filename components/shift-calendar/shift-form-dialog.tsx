@@ -64,12 +64,21 @@ type ShiftAssignment = {
   role: string | null
 }
 
+type ExistingShift = {
+  id: string
+  name: string
+  startTime: string | Date
+  endTime: string | Date
+  location: { id: string }
+  assignments?: Array<{ user: { id: string }; role: string | null }>
+}
+
 interface ShiftFormDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   locations: Location[]
   users: User[]
-  shift?: any
+  shift?: ExistingShift
   defaultDate?: Date
   defaultHour?: number
   onSuccess?: () => void
@@ -127,7 +136,7 @@ export function ShiftFormDialog({
       // Set assignments
       if (shift.assignments) {
         setSelectedUsers(
-          shift.assignments.map((a: any) => ({
+          shift.assignments.map((a) => ({
             userId: a.user.id,
             role: a.role,
           }))
