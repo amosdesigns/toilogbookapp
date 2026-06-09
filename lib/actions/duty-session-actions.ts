@@ -89,26 +89,11 @@ export async function clockIn(data: { locationId?: string; shiftId?: string }): 
       return { ok: false, message: "Guards must select a location" }
     }
 
-    // Supervisors/Admins should use HQ location (not roaming with null)
-    let locationId: string | null | undefined = data.locationId
-    if (
-      user.role === "SUPERVISOR" ||
-      user.role === "ADMIN" ||
-      user.role === "SUPER_ADMIN"
-    ) {
-      // Get HQ location
-      const hqLocation = await prisma.location.findFirst({
-        where: {
-          name: "HQ - Headquarters",
-        },
-      })
-
-      if (!hqLocation) {
-        return { ok: false, message: "HQ location not found. Please contact administrator." }
-      }
-
-      locationId = hqLocation.id
-    }
+    // Supervisors/Admins clock in for roaming duty (locationId = null)
+    const locationId: string | null | undefined =
+      user.role === "SUPERVISOR" || user.role === "ADMIN" || user.role === "SUPER_ADMIN"
+        ? null
+        : data.locationId
 
     // Create duty session
     const dutySession = await prisma.dutySession.create({
