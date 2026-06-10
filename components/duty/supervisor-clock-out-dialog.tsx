@@ -24,17 +24,13 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Car, Radio, Loader2 } from "lucide-react"
-import type { SupervisorEquipmentCheckout, SupervisorEquipment } from "@prisma/client"
+import type { EquipmentCheckoutWithEquipment } from "@/lib/actions/supervisor-equipment-actions"
 
 const supervisorClockOutSchema = z.object({
   checkinMileage: z.string().min(1, "Mileage is required"),
 })
 
 type SupervisorClockOutFormData = z.infer<typeof supervisorClockOutSchema>
-
-type EquipmentCheckoutWithEquipment = SupervisorEquipmentCheckout & {
-  equipment: SupervisorEquipment
-}
 
 interface SupervisorClockOutDialogProps {
   open: boolean
@@ -53,9 +49,10 @@ export function SupervisorClockOutDialog({
 }: SupervisorClockOutDialogProps) {
   const [error, setError] = useState<string | null>(null)
 
-  // Find car and radio from checkouts
-  const carCheckout = equipmentCheckouts.find((c) => c.equipment.type === "CAR")
-  const radioCheckout = equipmentCheckouts.find((c) => c.equipment.type === "RADIO")
+  // Find the active equipment checkout
+  const checkout = equipmentCheckouts.find((c) => !c.checkinTime)
+  const carCheckout = checkout?.vehicle ? checkout : undefined
+  const radioCheckout = checkout?.radio ? checkout : undefined
 
   const form = useForm<SupervisorClockOutFormData>({
     resolver: zodResolver(supervisorClockOutSchema),
@@ -125,7 +122,7 @@ export function SupervisorClockOutDialog({
               <div className="space-y-2">
                 <div className="flex items-center gap-2 text-base font-semibold">
                   <Car className="h-5 w-5" />
-                  <span>1. Returning Car: {carCheckout.equipment.identifier}</span>
+                  <span>1. Returning Car: {carCheckout.vehicle?.name}</span>
                 </div>
                 <p className="text-sm text-muted-foreground pl-7">
                   Starting mileage: {carCheckout.checkoutMileage?.toLocaleString()} miles
@@ -169,7 +166,7 @@ export function SupervisorClockOutDialog({
               <div className="space-y-2">
                 <div className="flex items-center gap-2 text-base font-semibold">
                   <Radio className="h-5 w-5" />
-                  <span>3. Returning Radio: {radioCheckout.equipment.identifier}</span>
+                  <span>3. Returning Radio: {radioCheckout.radio?.name}</span>
                 </div>
               </div>
             )}

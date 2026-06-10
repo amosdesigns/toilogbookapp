@@ -47,6 +47,7 @@ import {
   checkoutEquipment,
   checkinEquipment,
   getEquipmentCheckouts,
+  type EquipmentCheckoutWithEquipment,
 } from "@/lib/actions/supervisor-equipment-actions";
 import { getErrorMessage, type CatchError } from "@/lib/utils/error-handler";
 import type {
@@ -59,14 +60,6 @@ import type {
   TourWithSupervisor,
   DutySessionWithCheckIns,
 } from "@/lib/types/prisma-types";
-import type {
-  SupervisorEquipmentCheckout,
-  SupervisorEquipment,
-} from "@prisma/client";
-
-type EquipmentCheckoutWithEquipment = SupervisorEquipmentCheckout & {
-  equipment: SupervisorEquipment;
-};
 
 export default function AdminDashboardPage() {
   const { user } = useUser();

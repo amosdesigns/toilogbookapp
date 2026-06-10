@@ -5,11 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Car, Radio, Clock, MapPin } from "lucide-react"
 import { formatDistanceToNow } from "date-fns"
-import type { SupervisorEquipmentCheckout, SupervisorEquipment } from "@prisma/client"
-
-type EquipmentCheckoutWithEquipment = SupervisorEquipmentCheckout & {
-  equipment: SupervisorEquipment
-}
+import type { EquipmentCheckoutWithEquipment } from "@/lib/actions/supervisor-equipment-actions"
 
 interface SupervisorEquipmentStatusCardProps {
   equipmentCheckouts: EquipmentCheckoutWithEquipment[]
@@ -22,9 +18,10 @@ export function SupervisorEquipmentStatusCard({
   clockInTime,
   onClockOut,
 }: SupervisorEquipmentStatusCardProps) {
-  // Find car and radio from checkouts
-  const carCheckout = equipmentCheckouts.find((c) => c.equipment.type === "CAR")
-  const radioCheckout = equipmentCheckouts.find((c) => c.equipment.type === "RADIO")
+  // Find the active equipment checkout
+  const checkout = equipmentCheckouts.find((c) => !c.checkinTime)
+  const carCheckout = checkout?.vehicle ? checkout : undefined
+  const radioCheckout = checkout?.radio ? checkout : undefined
 
   const hoursOnDuty = formatDistanceToNow(new Date(clockInTime), { addSuffix: false })
 
@@ -34,7 +31,7 @@ export function SupervisorEquipmentStatusCard({
         <div className="flex items-center justify-between">
           <div>
             <CardTitle>Supervisor On Duty</CardTitle>
-            <CardDescription>HQ - Headquarters</CardDescription>
+            <CardDescription>HQ401</CardDescription>
           </div>
           <Badge variant="default" className="bg-green-600">
             Active
@@ -57,7 +54,7 @@ export function SupervisorEquipmentStatusCard({
             <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/50">
               <Car className="h-5 w-5 text-muted-foreground mt-0.5" />
               <div className="flex-1">
-                <p className="font-medium">{carCheckout.equipment.identifier}</p>
+                <p className="font-medium">{carCheckout.vehicle?.name}</p>
                 <p className="text-sm text-muted-foreground">
                   Starting: {carCheckout.checkoutMileage?.toLocaleString()} miles
                 </p>
@@ -73,7 +70,7 @@ export function SupervisorEquipmentStatusCard({
             <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/50">
               <Radio className="h-5 w-5 text-muted-foreground mt-0.5" />
               <div className="flex-1">
-                <p className="font-medium">{radioCheckout.equipment.identifier}</p>
+                <p className="font-medium">{radioCheckout.radio?.name}</p>
                 <p className="text-sm text-muted-foreground">Radio</p>
                 <p className="text-xs text-muted-foreground mt-1">
                   Checked out {formatDistanceToNow(new Date(radioCheckout.checkoutTime), { addSuffix: true })}

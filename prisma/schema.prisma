@@ -120,11 +120,6 @@ enum TourStopType {
   GENERAL_OBSERVATION
 }
 
-enum SupervisorEquipmentType {
-  CAR
-  RADIO
-}
-
 enum FleetStatus {
   WORKING
   OUT_OF_SERVICE
@@ -1051,28 +1046,13 @@ model TourStop {
   @@index([arrivedAt])
 }
 
-// Supervisor Equipment Management
-model SupervisorEquipment {
-  id          String                  @id @default(cuid())
-  type        SupervisorEquipmentType
-  identifier  String // License plate for CAR, Radio number for RADIO
-  isAvailable Boolean                 @default(true)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  checkouts SupervisorEquipmentCheckout[]
-
-  @@unique([type, identifier])
-  @@index([type])
-  @@index([isAvailable])
-}
-
-// Track supervisor equipment checkout/checkin
+// Track supervisor equipment checkout/checkin (Fleet vehicles & radios)
 model SupervisorEquipmentCheckout {
-  id            String   @id @default(cuid())
+  id            String @id @default(cuid())
   dutySessionId String
-  equipmentId   String
+
+  vehicleId String?
+  radioId   String?
 
   // Car-specific fields
   checkoutMileage Int?
@@ -1084,11 +1064,13 @@ model SupervisorEquipmentCheckout {
   notes        String?   @db.Text
 
   // Relations
-  dutySession DutySession         @relation(fields: [dutySessionId], references: [id], onDelete: Cascade)
-  equipment   SupervisorEquipment @relation(fields: [equipmentId], references: [id])
+  dutySession DutySession @relation(fields: [dutySessionId], references: [id], onDelete: Cascade)
+  vehicle     Vehicle?    @relation(fields: [vehicleId], references: [id])
+  radio       Radio?      @relation(fields: [radioId], references: [id])
 
   @@index([dutySessionId])
-  @@index([equipmentId])
+  @@index([vehicleId])
+  @@index([radioId])
   @@index([checkoutTime])
 }
 
@@ -1150,6 +1132,8 @@ model Vehicle {
   updatedAt    DateTime    @updatedAt
   archivedAt   DateTime?
 
+  equipmentCheckouts SupervisorEquipmentCheckout[]
+
   @@index([locationId])
   @@index([status])
 }
@@ -1168,6 +1152,8 @@ model Radio {
   createdAt    DateTime    @default(now())
   updatedAt    DateTime    @updatedAt
   archivedAt   DateTime?
+
+  equipmentCheckouts SupervisorEquipmentCheckout[]
 
   @@index([locationId])
   @@index([status])

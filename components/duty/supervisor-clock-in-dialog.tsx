@@ -31,9 +31,8 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Car, Radio, Loader2 } from "lucide-react"
-import { getAvailableEquipment } from "@/lib/actions/supervisor-equipment-actions"
+import { getAvailableEquipment, type AvailableEquipmentItem } from "@/lib/actions/supervisor-equipment-actions"
 import { toast } from "sonner"
-import type { SupervisorEquipment } from "@prisma/client"
 
 const supervisorClockInSchema = z.object({
   carId: z.string().min(1, "Please select a car"),
@@ -61,8 +60,8 @@ export function SupervisorClockInDialog({
   isLoading = false,
 }: SupervisorClockInDialogProps) {
   const [error, setError] = useState<string | null>(null)
-  const [cars, setCars] = useState<SupervisorEquipment[]>([])
-  const [radios, setRadios] = useState<SupervisorEquipment[]>([])
+  const [cars, setCars] = useState<AvailableEquipmentItem[]>([])
+  const [radios, setRadios] = useState<AvailableEquipmentItem[]>([])
   const [isFetchingEquipment, setIsFetchingEquipment] = useState(false)
 
   const form = useForm<SupervisorClockInFormData>({
@@ -86,13 +85,13 @@ export function SupervisorClockInDialog({
         ])
 
         if (carsResult.ok && carsResult.data) {
-          setCars(carsResult.data as SupervisorEquipment[])
+          setCars(carsResult.data)
         } else {
           toast.error("Failed to load available cars")
         }
 
         if (radiosResult.ok && radiosResult.data) {
-          setRadios(radiosResult.data as SupervisorEquipment[])
+          setRadios(radiosResult.data)
         } else {
           toast.error("Failed to load available radios")
         }
