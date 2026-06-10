@@ -22,6 +22,7 @@ import { LogDetailDialog } from "@/components/logs/log-detail-dialog";
 import { GuardsOnDutyTable } from "@/components/supervisor/guards-on-duty-table";
 import { IncidentReportsStatus } from "@/components/supervisor/incident-reports-status";
 import { LocationLogbookViewer } from "@/components/supervisor/location-logbook-viewer";
+import { InShopWidget } from "@/components/fleet/in-shop-widget";
 import { ActiveTourCard } from "@/components/tour/active-tour-card";
 import { FileText, Calendar, MapPin, Users } from "lucide-react";
 import { toast } from "sonner";
@@ -637,6 +638,9 @@ export default function AdminDashboardPage() {
 
       {/* Supervisor: Location Logbook Viewer */}
       {isSupervisor && <LocationLogbookViewer locations={locations} />}
+
+      {/* Fleet: In Shop / Out of Service */}
+      <InShopWidget />
 
       {/* Stats Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">

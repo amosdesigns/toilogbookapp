@@ -3,9 +3,10 @@
 import { useState } from 'react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Settings, CheckSquare, MapPin } from 'lucide-react'
+import { Settings, CheckSquare, MapPin, Car } from 'lucide-react'
 import { SafetyChecklistSettings } from './safety-checklist-settings'
 import { LocationSettings } from './location-settings'
+import { FleetSettings } from './fleet-settings'
 import type { Role } from '@prisma/client'
 
 interface SettingsPageClientProps {
@@ -15,9 +16,10 @@ interface SettingsPageClientProps {
     lastName: string
     role: Role
   }
+  locations: { id: string; name: string }[]
 }
 
-export function SettingsPageClient({ user }: SettingsPageClientProps) {
+export function SettingsPageClient({ user, locations }: SettingsPageClientProps) {
   const [activeTab, setActiveTab] = useState('checklist')
 
   return (
@@ -31,7 +33,7 @@ export function SettingsPageClient({ user }: SettingsPageClientProps) {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <TabsList className="grid w-full max-w-md grid-cols-2">
+        <TabsList className="grid w-full max-w-lg grid-cols-3">
           <TabsTrigger value="checklist" className="flex items-center gap-2">
             <CheckSquare className="h-4 w-4" />
             Safety Checklist
@@ -39,6 +41,10 @@ export function SettingsPageClient({ user }: SettingsPageClientProps) {
           <TabsTrigger value="locations" className="flex items-center gap-2">
             <MapPin className="h-4 w-4" />
             Locations
+          </TabsTrigger>
+          <TabsTrigger value="fleet" className="flex items-center gap-2">
+            <Car className="h-4 w-4" />
+            Fleet
           </TabsTrigger>
         </TabsList>
 
@@ -67,6 +73,21 @@ export function SettingsPageClient({ user }: SettingsPageClientProps) {
             </CardHeader>
             <CardContent>
               <LocationSettings user={user} />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="fleet" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Fleet Management</CardTitle>
+              <CardDescription>
+                Manage vehicles and radios across all marina locations. Track status, mileage,
+                VINs, and serial numbers.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <FleetSettings user={user} locations={locations} />
             </CardContent>
           </Card>
         </TabsContent>

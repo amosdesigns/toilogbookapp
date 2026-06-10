@@ -125,6 +125,12 @@ enum SupervisorEquipmentType {
   RADIO
 }
 
+enum FleetStatus {
+  WORKING
+  OUT_OF_SERVICE
+  RETIRED
+}
+
 // Models
 model User {
   id            String  @id @default(cuid())
@@ -208,6 +214,8 @@ model Location {
   timesheetEntries         TimesheetEntry[]
   incidentReports          IncidentReport[]
   tourStops                TourStop[]
+  vehicles                 Vehicle[]
+  radios                   Radio[]
 
   @@index([name])
 }
@@ -1121,4 +1129,46 @@ model IncidentReportGeneration {
   @@index([generatedBy])
   @@index([guardAssignedId])
   @@index([supervisorAssignedId])
+}
+
+// Fleet Management — Vehicles
+model Vehicle {
+  id           String      @id @default(cuid())
+  name         String      // e.g. "Unit 3", "Blue Pickup"
+  make         String
+  model        String
+  year         Int
+  vin          String?     @unique
+  licensePlate String?
+  mileage      Int         @default(0)
+  mileageUpdatedAt DateTime?
+  status       FleetStatus @default(WORKING)
+  locationId   String?
+  location     Location?   @relation(fields: [locationId], references: [id])
+  notes        String?     @db.Text
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+  archivedAt   DateTime?
+
+  @@index([locationId])
+  @@index([status])
+}
+
+// Fleet Management — Radios
+model Radio {
+  id           String      @id @default(cuid())
+  name         String      // e.g. "Radio 1", "Portable 3"
+  serialNumber String?     @unique
+  model        String?
+  channel      String?
+  status       FleetStatus @default(WORKING)
+  locationId   String?
+  location     Location?   @relation(fields: [locationId], references: [id])
+  notes        String?     @db.Text
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+  archivedAt   DateTime?
+
+  @@index([locationId])
+  @@index([status])
 }
