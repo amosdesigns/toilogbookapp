@@ -133,12 +133,15 @@ export function RadioFormDialog({ open, radio, locations, onOpenChange, onSucces
               <FormField control={form.control} name="locationId" render={({ field }) => (
                 <FormItem>
                   <FormLabel>Assigned Location</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value ?? ''}>
+                  <Select
+                    onValueChange={value => field.onChange(value === 'none' ? '' : value)}
+                    value={field.value || 'none'}
+                  >
                     <FormControl>
                       <SelectTrigger><SelectValue placeholder="No location" /></SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="">No location assigned</SelectItem>
+                      <SelectItem value="none">No location assigned</SelectItem>
                       {locations.map(l => (
                         <SelectItem key={l.id} value={l.id}>{l.name}</SelectItem>
                       ))}
