@@ -367,7 +367,7 @@ export async function getHQLocation(): Promise<ActionResult<{ id: string; name: 
   try {
     const hqLocation = await prisma.location.findFirst({
       where: {
-        name: "HQ - Headquarters",
+        name: "HQ415",
       },
       select: {
         id: true,
