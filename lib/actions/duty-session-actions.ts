@@ -89,12 +89,12 @@ export async function clockIn(data: { locationId?: string; shiftId?: string }): 
       return { ok: false, message: "Guards must select a location" }
     }
 
-    // Supervisors/Admins sign in from HQ415, then roam to other locations via check-ins
+    // Supervisors/Admins sign in from HQ401, then roam to other locations via check-ins
     let locationId: string | null | undefined = data.locationId
 
     if (user.role === "SUPERVISOR" || user.role === "ADMIN" || user.role === "SUPER_ADMIN") {
       const hqLocation = await prisma.location.findFirst({
-        where: { name: "HQ415" },
+        where: { name: "HQ401" },
         select: { id: true },
       })
 
