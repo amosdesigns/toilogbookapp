@@ -34,6 +34,7 @@ export function LocationForm({
       name: defaultValues?.name || "",
       description: defaultValues?.description || "",
       address: defaultValues?.address || "",
+      maxCapacity: defaultValues?.maxCapacity ?? null,
       isActive: defaultValues?.isActive ?? true,
     },
   })
@@ -91,6 +92,30 @@ export function LocationForm({
               </FormControl>
               <FormDescription>
                 Physical address of the marina location
+              </FormDescription>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="maxCapacity"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Max Capacity (Optional)</FormLabel>
+              <FormControl>
+                <Input
+                  type="number"
+                  min={1}
+                  max={50}
+                  placeholder="Max guards per shift"
+                  value={field.value ?? ""}
+                  onChange={(e) => field.onChange(e.target.value === "" ? null : parseInt(e.target.value))}
+                />
+              </FormControl>
+              <FormDescription>
+                Maximum number of guards that can be assigned per shift
               </FormDescription>
               <FormMessage />
             </FormItem>
