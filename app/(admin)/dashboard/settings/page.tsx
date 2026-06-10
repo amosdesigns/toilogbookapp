@@ -9,7 +9,11 @@ export const metadata = {
   description: 'Manage system settings and configurations',
 }
 
-export default async function SettingsPage() {
+export default async function SettingsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ tab?: string }>
+}) {
   const user = await getCurrentUser()
 
   if (!user) redirect('/sign-in')
@@ -18,5 +22,7 @@ export default async function SettingsPage() {
   const locationsResult = await getActiveLocations()
   const locations = locationsResult.ok ? locationsResult.data.map(l => ({ id: l.id, name: l.name })) : []
 
-  return <SettingsPageClient user={user} locations={locations} />
+  const { tab } = await searchParams
+
+  return <SettingsPageClient user={user} locations={locations} initialTab={tab} />
 }

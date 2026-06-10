@@ -9,6 +9,13 @@ import { LocationSettings } from './location-settings'
 import { FleetSettings } from './fleet-settings'
 import type { Role } from '@prisma/client'
 
+const SETTINGS_TABS = ['checklist', 'locations', 'fleet'] as const
+type SettingsTab = (typeof SETTINGS_TABS)[number]
+
+function isSettingsTab(value: string | undefined): value is SettingsTab {
+  return SETTINGS_TABS.includes(value as SettingsTab)
+}
+
 interface SettingsPageClientProps {
   user: {
     id: string
@@ -17,10 +24,13 @@ interface SettingsPageClientProps {
     role: Role
   }
   locations: { id: string; name: string }[]
+  initialTab?: string
 }
 
-export function SettingsPageClient({ user, locations }: SettingsPageClientProps) {
-  const [activeTab, setActiveTab] = useState('checklist')
+export function SettingsPageClient({ user, locations, initialTab }: SettingsPageClientProps) {
+  const [activeTab, setActiveTab] = useState<SettingsTab>(
+    isSettingsTab(initialTab) ? initialTab : 'checklist'
+  )
 
   return (
     <div className="container mx-auto py-6 space-y-6">
@@ -32,7 +42,11 @@ export function SettingsPageClient({ user, locations }: SettingsPageClientProps)
         </div>
       </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+      <Tabs
+        value={activeTab}
+        onValueChange={(value) => isSettingsTab(value) && setActiveTab(value)}
+        className="space-y-4"
+      >
         <TabsList className="grid w-full max-w-lg grid-cols-3">
           <TabsTrigger value="checklist" className="flex items-center gap-2">
             <CheckSquare className="h-4 w-4" />
